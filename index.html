@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raj Govin Practice – Receipt</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: #e9ecef;
+    font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+    color: #222;
+  }
+
+  /* A4 sheet: 210mm x 297mm */
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 20px auto;
+    padding: 18mm 20mm;
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(0,0,0,.15);
+  }
+
+  .receipt {
+    border: 2px solid #1f3a5f;
+    border-radius: 6px;
+    padding: 10mm 12mm 8mm;
+  }
+
+  .title {
+    text-align: center;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: #1f3a5f;
+    margin: 0;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 13px;
+    letter-spacing: 6px;
+    color: #555;
+    margin: 4px 0 0;
+  }
+  hr.rule {
+    border: 0;
+    border-top: 2px solid #1f3a5f;
+    margin: 6mm 0 5mm;
+  }
+
+  .meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 15px;
+    margin-bottom: 7mm;
+  }
+  .meta strong { color: #1f3a5f; }
+
+  .field {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    margin-bottom: 7mm;
+    font-size: 15px;
+  }
+  .field label {
+    white-space: nowrap;
+    font-weight: 600;
+    min-width: 46mm;
+  }
+  .field input[type="text"] {
+    flex: 1;
+    border: 0;
+    border-bottom: 1px dotted #333;
+    font: inherit;
+    padding: 2px 4px;
+    background: transparent;
+    outline: none;
+  }
+  .field input[type="text"]:focus { border-bottom-color: #1f3a5f; background: #f3f7fc; }
+
+  .radios { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
+  .radios label { min-width: 0; font-weight: 400; cursor: pointer; }
+  .radios input { margin-right: 6px; accent-color: #1f3a5f; }
+  #othersText { flex: 0 1 45mm; }
+
+  .sign-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 4mm;
+  }
+  .sign-block { text-align: center; font-size: 14px; font-weight: 600; }
+  .sign-box {
+    width: 70mm;
+    height: 28mm;
+    border: 1.5px solid #333;
+    border-radius: 3px;
+    margin-top: 6px;
+  }
+
+  .note {
+    margin-top: 7mm;
+    text-align: center;
+    font-size: 13px;
+    font-style: italic;
+    color: #444;
+    border-top: 1px dashed #999;
+    padding-top: 4mm;
+  }
+
+  .toolbar { text-align: center; margin: 16px 0 0; }
+  .toolbar button {
+    background: #1f3a5f; color: #fff; border: 0; border-radius: 4px;
+    padding: 10px 22px; font-size: 14px; cursor: pointer; margin: 0 6px;
+  }
+  .toolbar button.secondary { background: #6c757d; }
+
+  @media print {
+    body { background: #fff; }
+    .page { margin: 0; box-shadow: none; }
+    .toolbar { display: none; }
+    .field input[type="text"]:focus { background: transparent; }
+  }
+
+  @media screen and (max-width: 820px) {
+    .page { width: 100%; min-height: auto; padding: 16px; margin: 0; }
+    .field { flex-direction: column; align-items: stretch; gap: 4px; }
+    .field label { min-width: 0; }
+    .meta { flex-direction: column; gap: 6px; }
+    .sign-row { justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button onclick="window.print()">Print / Save PDF</button>
+  <button class="secondary" onclick="newBill()">New Bill No.</button>
+</div>
+
+<div class="page">
+  <div class="receipt">
+    <h1 class="title">RAJ GOVIN PRACTICE</h1>
+    <p class="subtitle">RECEIPT</p>
+    <hr class="rule">
+
+    <div class="meta">
+      <div><strong>Date:</strong> <span id="receiptDate"></span></div>
+      <div><strong>Bill Number:</strong> <span id="billNo"></span></div>
+    </div>
+
+    <div class="field">
+      <label for="receivedFrom">Received from:</label>
+      <input type="text" id="receivedFrom" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label for="amountWords">Amount in words (S$):</label>
+      <input type="text" id="amountWords" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label for="paymentFor">Payment For:</label>
+      <input type="text" id="paymentFor" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label>Mode of Payment:</label>
+      <div class="radios">
+        <label><input type="radio" name="mode" value="PayNow" checked>PayNow</label>
+        <label><input type="radio" name="mode" value="Cash">Cash</label>
+        <label><input type="radio" name="mode" value="Others">Others</label>
+        <input type="text" id="othersText" placeholder="Specify" disabled>
+      </div>
+    </div>
+
+    <div class="sign-row">
+      <div class="sign-block">
+        Signature:
+        <div class="sign-box"></div>
+      </div>
+    </div>
+
+    <p class="note">** This is a digital receipt - No signature required **</p>
+  </div>
+  <!-- Lower part of the A4 page intentionally left blank -->
+</div>
+
+<script>
+  // System date
+  function setDate() {
+    const d = new Date();
+    document.getElementById('receiptDate').textContent =
+      d.toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  // Random 6-digit bill number (100000–999999)
+  function newBill() {
+    document.getElementById('billNo').textContent =
+      Math.floor(100000 + Math.random() * 900000);
+  }
+
+  // Enable "Others" text only when Others is selected
+  document.querySelectorAll('input[name="mode"]').forEach(r => {
+    r.addEventListener('change', () => {
+      const others = document.getElementById('othersText');
+      others.disabled = r.value !== 'Others' || !r.checked;
+      if (others.disabled) others.value = '';
+      else others.focus();
+    });
+  });
+
+  setDate();
+  newBill();
+</script>
+</body>
+</html>
