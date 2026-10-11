@@ -1,1 +1,495 @@
-Index
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1f3a5f">
+<title>Raj Govin Law Practice</title>
+<style>
+  :root {
+    --navy: #1f3a5f;
+    --navy-soft: #f1f5fb;
+    --ink: #1d232b;
+    --muted: #6b7380;
+    --line: #c9d1dc;
+    --danger: #b3261e;
+    --bg: #e9edf2;
+    --radius: 8px;
+  }
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.4;
+  }
+
+  /* ---------- Sheet ---------- */
+  .sheet {
+    width: min(210mm, 100% - 24px);
+    margin: 16px auto;
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: 0 2px 14px rgba(0,0,0,.12);
+    padding: clamp(18px, 5vw, 18mm) clamp(16px, 5vw, 20mm);
+  }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  h1.title {
+    margin: 0;
+    text-align: center;
+    color: var(--navy);
+    font-size: clamp(20px, 5.6vw, 28px);
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  .address {
+    text-align: center;
+    font-size: clamp(11px, 3.1vw, 13px);
+    color: var(--muted);
+    margin: 4px 0 0;
+  }
+  .doc-label {
+    text-align: center;
+    font-weight: 800;
+    letter-spacing: .4em;
+    font-size: clamp(14px, 4vw, 16px);
+    margin: 10px 0 0;
+    padding-left: .4em;
+  }
+  .form-title {
+    text-align: center; color: var(--navy); font-size: clamp(18px, 5vw, 22px);
+    font-weight: 700; margin: 0;
+  }
+  .form-sub { text-align: center; color: var(--muted); font-size: 13px; margin: 4px 0 0; }
+  hr.rule { border: 0; border-top: 2px solid var(--navy); margin: 16px 0 18px; }
+
+  /* ---------- Fields ---------- */
+  .field { margin-bottom: 16px; }
+  .field > label, .field > .label {
+    display: block; font-weight: 600; font-size: 15px; margin-bottom: 6px;
+  }
+  .field input[type="text"], .field textarea {
+    width: 100%;
+    font: inherit;
+    font-size: 16px;               /* prevents iOS zoom on focus */
+    color: var(--ink);
+    padding: 11px 12px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .field textarea { resize: vertical; min-height: 84px; }
+  .field input::placeholder, .field textarea::placeholder { color: #a0a7b2; }
+  .field input:focus, .field textarea:focus {
+    border-color: var(--navy); box-shadow: 0 0 0 3px rgba(31,58,95,.14);
+  }
+  .field.invalid input, .field.invalid .choices { border-color: var(--danger); }
+  .hint { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+  #amountWords { font-style: italic; color: var(--navy); }
+  #amountWords.empty { color: var(--muted); }
+
+  .choices { display: flex; flex-wrap: wrap; gap: 10px; border: 1px solid transparent; border-radius: 6px; }
+  .choice {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; min-height: 44px;
+    border: 1px solid var(--line); border-radius: 6px;
+    cursor: pointer; font-weight: 500; user-select: none; flex: 1 1 auto;
+  }
+  .choice input { accent-color: var(--navy); width: 18px; height: 18px; margin: 0; }
+  .choice:has(input:checked) { border-color: var(--navy); background: var(--navy-soft); }
+  #othersWrap { margin-top: 10px; display: none; }
+  #othersWrap.show { display: block; }
+
+  .meta {
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px;
+    font-size: 15px; margin-bottom: 18px;
+  }
+  .meta strong { color: var(--navy); }
+
+  .sign-row { display: flex; justify-content: flex-end; margin-top: 8px; }
+  .sign-block { text-align: center; font-weight: 600; font-size: 14px; width: min(70mm, 100%); }
+  .sign-box { height: 28mm; border: 1.5px solid #333; border-radius: 4px; margin-top: 6px; }
+  .note {
+    margin: 18px 0 0; text-align: center; font-size: 13px; font-style: italic; color: #444;
+    border-top: 1px dashed #999; padding-top: 12px;
+  }
+
+  /* ---------- Buttons ---------- */
+  .actions { display: flex; gap: 10px; margin-top: 22px; }
+  .btn {
+    flex: 1; min-height: 48px; font: inherit; font-weight: 600; font-size: 16px;
+    border-radius: 6px; border: 1px solid var(--navy); cursor: pointer;
+    background: var(--navy); color: #fff;
+  }
+  .btn.ghost { background: #fff; color: var(--navy); }
+  .btn:disabled { opacity: .6; cursor: wait; }
+  .msg { margin-top: 12px; font-size: 14px; text-align: center; min-height: 1em; }
+  .msg.error { color: var(--danger); }
+  .msg.ok { color: #1e7a3c; }
+
+  /* ---------- Frozen receipt ---------- */
+  .val { display: none; }
+  .frozen .receipt-box { border: 2px solid var(--navy); border-radius: 6px; padding: clamp(14px, 4vw, 10mm) clamp(14px, 4vw, 12mm); }
+  .frozen .field input, .frozen .choices, .frozen #othersWrap, .frozen .hint-live, .frozen .edit-only { display: none !important; }
+  .frozen .val {
+    display: block; padding: 4px 2px 6px; border-bottom: 1px dotted #555; min-height: 1.6em; word-break: break-word;
+  }
+  .frozen .field { display: flex; gap: 12px; align-items: flex-end; margin-bottom: 14px; }
+  .frozen .field > label, .frozen .field > .label { flex: 0 0 40mm; margin: 0 0 6px; }
+  .frozen .field .stack { flex: 1; min-width: 0; }
+  .frozen .words-val { display: block; font-size: 13px; font-style: italic; color: #333; margin-top: 4px; }
+  .words-val { display: none; }
+  .print-actions { display: none; }
+  .frozen .print-actions { display: flex; }
+
+  /* ---------- Mobile portrait ---------- */
+  @media (max-width: 560px) {
+    .sheet { width: 100%; margin: 0; border-radius: 0; box-shadow: none; min-height: 100vh; }
+    .actions { padding-bottom: env(safe-area-inset-bottom); margin-top: 18px; }
+    .frozen .field { display: block; }
+    .frozen .field > label, .frozen .field > .label { margin-bottom: 2px; }
+    .sign-row { justify-content: center; }
+    .meta { flex-direction: column; }
+  }
+
+  /* ---------- Print (A4) ---------- */
+  @media print {
+    body { background: #fff; }
+    .sheet {
+      width: 210mm; min-height: 297mm; margin: 0; border-radius: 0; box-shadow: none;
+      padding: 18mm 20mm;
+    }
+    .actions, .msg, .no-print { display: none !important; }
+    .frozen .field { display: flex !important; }
+    .meta { flex-direction: row !important; }
+    .sign-row { justify-content: flex-end !important; }
+  }
+</style>
+</head>
+<body>
+
+<main class="sheet">
+
+  <!-- ================= PAGE 1 : CASE ENTRY ================= -->
+  <section class="view active" id="page1" aria-labelledby="p1title">
+    <h2 class="form-title" id="p1title">Case Entry</h2>
+    <p class="form-sub">Step 1 of 2</p>
+    <hr class="rule">
+
+    <form id="form1" novalidate autocomplete="off">
+      <div class="field" id="f-lawyer">
+        <span class="label">Lawyer's Name:</span>
+        <div class="choices" role="radiogroup">
+          <label class="choice"><input type="radio" name="lawyer" value="Dora Raj" data-n="1" checked>Dora Raj</label>
+          <label class="choice"><input type="radio" name="lawyer" value="Govinda Raju" data-n="2">Govinda Raju</label>
+        </div>
+      </div>
+
+      <div class="field" id="f-sl">
+        <label for="slNo">S/L No:</label>
+        <input type="text" id="slNo" maxlength="40">
+        <div class="hint">Auto-filled as n-YYYYMMDD-HHMM (1 = Dora Raj, 2 = Govinda Raju). Editable.</div>
+      </div>
+
+      <div class="field">
+        <label for="caseCategory">Case Category:</label>
+        <input type="text" id="caseCategory" placeholder="e.g. Divorce / Theft" maxlength="300">
+      </div>
+
+      <div class="field">
+        <label for="item1">Item 1:</label>
+        <input type="text" id="item1" placeholder="The data to be entered into Excel" maxlength="1000">
+      </div>
+
+      <div class="field">
+        <label for="item2">Item 2:</label>
+        <input type="text" id="item2" placeholder="The data to be entered into Excel" maxlength="1000">
+      </div>
+
+      <div class="field">
+        <label for="remarks">Remarks:</label>
+        <textarea id="remarks" maxlength="1000"></textarea>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn ghost" id="cancel1">Cancel</button>
+        <button type="submit" class="btn">Submit</button>
+      </div>
+      <p class="msg" id="msg1" role="status"></p>
+    </form>
+  </section>
+
+  <!-- ================= PAGE 2 : RECEIPT ================= -->
+  <section class="view" id="page2" aria-labelledby="p2title">
+    <div class="receipt-box">
+      <h1 class="title" id="p2title">Raj Govin Law Practice</h1>
+      <p class="address">People's Park Centre, #05-48, Singapore 058357</p>
+      <p class="doc-label">RECEIPT</p>
+      <hr class="rule">
+
+      <div class="meta">
+        <div><strong>Date:</strong> <span id="receiptDate"></span></div>
+        <div><strong>Bill Number:</strong> <span id="billNo"></span></div>
+      </div>
+
+      <form id="form2" novalidate autocomplete="off">
+        <div class="field" id="f-from">
+          <label for="receivedFrom">Received from:</label>
+          <div class="stack">
+            <input type="text" id="receivedFrom" maxlength="300">
+            <span class="val" data-for="receivedFrom"></span>
+          </div>
+        </div>
+
+        <div class="field" id="f-amount">
+          <label for="amount">Amount (S$):</label>
+          <div class="stack">
+            <input type="text" id="amount" inputmode="decimal" placeholder="0.00" maxlength="13">
+            <div class="hint hint-live" id="amountWords">The amount in words will appear here automatically</div>
+            <span class="val" data-for="amount"></span>
+            <span class="words-val" id="amountWordsFinal"></span>
+          </div>
+        </div>
+
+        <div class="field" id="f-for">
+          <label for="paymentFor">Payment For:</label>
+          <div class="stack">
+            <input type="text" id="paymentFor" maxlength="500">
+            <span class="val" data-for="paymentFor"></span>
+          </div>
+        </div>
+
+        <div class="field" id="f-mode">
+          <span class="label">Mode of Payment:</span>
+          <div class="stack">
+            <div class="choices" role="radiogroup">
+              <label class="choice"><input type="radio" name="mode" value="PayNow" checked>PayNow</label>
+              <label class="choice"><input type="radio" name="mode" value="Cash">Cash</label>
+              <label class="choice"><input type="radio" name="mode" value="Others">Others</label>
+            </div>
+            <div id="othersWrap"><input type="text" id="modeOther" placeholder="Please specify" maxlength="100"></div>
+            <span class="val" data-for="mode"></span>
+          </div>
+        </div>
+
+        <div class="sign-row">
+          <div class="sign-block">
+            Signature:
+            <div class="sign-box"></div>
+          </div>
+        </div>
+
+        <p class="note">** This is a digital receipt - No signature required **</p>
+
+        <div class="actions edit-only">
+          <button type="button" class="btn ghost" id="back2">Back</button>
+          <button type="submit" class="btn" id="submit2">Submit</button>
+        </div>
+        <div class="actions print-actions">
+          <button type="button" class="btn ghost" id="newEntry">New Entry</button>
+          <button type="button" class="btn" onclick="window.print()">Print</button>
+        </div>
+        <p class="msg" id="msg2" role="status"></p>
+      </form>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const pad = n => String(n).padStart(2, '0');
+  let caseData = null;
+
+  /* ---------- Page switching ---------- */
+  function show(id) {
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === id));
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------- Page 1 ---------- */
+  function buildSlNo() {
+    const sel = document.querySelector('input[name="lawyer"]:checked');
+    const n = sel ? sel.dataset.n : '1';
+    const d = new Date();
+    return `${n}-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+  }
+  document.querySelectorAll('input[name="lawyer"]').forEach(r =>
+    r.addEventListener('change', () => { $('slNo').value = buildSlNo(); }));
+
+  function resetForm1() {
+    $('form1').reset();
+    $('slNo').value = buildSlNo();
+    $('msg1').textContent = '';
+    document.querySelectorAll('#page1 .invalid').forEach(e => e.classList.remove('invalid'));
+  }
+  $('cancel1').addEventListener('click', resetForm1);
+
+  $('form1').addEventListener('submit', e => {
+    e.preventDefault();
+    const sl = $('slNo').value.trim();
+    $('f-sl').classList.toggle('invalid', !sl);
+    if (!sl) { $('msg1').className = 'msg error'; $('msg1').textContent = 'S/L No is required.'; return; }
+    caseData = {
+      lawyer: document.querySelector('input[name="lawyer"]:checked').value,
+      slNo: sl,
+      caseCategory: $('caseCategory').value.trim(),
+      item1: $('item1').value.trim(),
+      item2: $('item2').value.trim(),
+      remarks: $('remarks').value.trim()
+    };
+    $('msg1').textContent = '';
+    startReceipt();
+    show('page2');
+  });
+
+  /* ---------- Amount in words ---------- */
+  const ONES = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+    'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+  const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+
+  function under1000(n) {
+    const parts = [];
+    if (n >= 100) { parts.push(ONES[Math.floor(n / 100)] + ' hundred'); n %= 100; }
+    if (n >= 20) { parts.push(TENS[Math.floor(n / 10)] + (n % 10 ? ' ' + ONES[n % 10] : '')); }
+    else if (n > 0) { parts.push(ONES[n]); }
+    return parts.join(' ');
+  }
+  function toWords(n) {
+    if (n === 0) return 'zero';
+    const scales = [[1e9, 'billion'], [1e6, 'million'], [1e3, 'thousand']];
+    const out = [];
+    for (const [v, name] of scales) {
+      if (n >= v) { out.push(under1000(Math.floor(n / v)) + ' ' + name); n %= v; }
+    }
+    if (n) out.push(under1000(n));
+    return out.join(' ');
+  }
+  function parseAmount(raw) {
+    const s = String(raw).replace(/[,\s$]/g, '');
+    if (!/^\d+(\.\d{1,2})?$/.test(s)) return null;
+    const cents = Math.round(parseFloat(s) * 100);
+    return cents > 0 && cents <= 99999999999 ? cents : null;
+  }
+  function amountInWords(totalCents) {
+    const d = Math.floor(totalCents / 100), c = totalCents % 100;
+    let txt;
+    if (d && c) txt = `an amount of dollars ${toWords(d)} and cents ${toWords(c)} only`;
+    else if (d) txt = `an amount of dollars ${toWords(d)} only`;
+    else txt = `an amount of cents ${toWords(c)} only`;
+    return txt.charAt(0).toUpperCase() + txt.slice(1);
+  }
+  const WORDS_PLACEHOLDER = 'The amount in words will appear here automatically';
+  function updateWords() {
+    const raw = $('amount').value.trim();
+    const cents = parseAmount(raw);
+    const el = $('amountWords');
+    if (!raw) { el.textContent = WORDS_PLACEHOLDER; el.classList.add('empty'); return null; }
+    if (cents === null) { el.textContent = 'Enter a valid amount, e.g. 99.50'; el.classList.add('empty'); return null; }
+    el.textContent = amountInWords(cents);
+    el.classList.remove('empty');
+    return cents;
+  }
+  $('amount').addEventListener('input', updateWords);
+
+  /* ---------- Page 2 ---------- */
+  function startReceipt() {
+    const d = new Date();
+    $('receiptDate').textContent = d.toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric' });
+    $('billNo').textContent = Math.floor(100000 + Math.random() * 900000);
+  }
+
+  document.querySelectorAll('input[name="mode"]').forEach(r =>
+    r.addEventListener('change', () => {
+      const isOther = document.querySelector('input[name="mode"]:checked').value === 'Others';
+      $('othersWrap').classList.toggle('show', isOther);
+      if (isOther) $('modeOther').focus(); else $('modeOther').value = '';
+    }));
+
+  $('back2').addEventListener('click', () => show('page1'));
+
+  $('form2').addEventListener('submit', async e => {
+    e.preventDefault();
+    const msg = $('msg2');
+    const cents = updateWords();
+    const mode = document.querySelector('input[name="mode"]:checked').value;
+    const checks = [
+      ['f-from', !!$('receivedFrom').value.trim()],
+      ['f-amount', cents !== null],
+      ['f-for', !!$('paymentFor').value.trim()],
+      ['f-mode', mode !== 'Others' || !!$('modeOther').value.trim()]
+    ];
+    checks.forEach(([id, ok]) => $(id).classList.toggle('invalid', !ok));
+    if (checks.some(([, ok]) => !ok)) {
+      msg.className = 'msg error'; msg.textContent = 'Please complete the highlighted fields.'; return;
+    }
+
+    const receipt = {
+      date: $('receiptDate').textContent,
+      billNo: $('billNo').textContent,
+      receivedFrom: $('receivedFrom').value.trim(),
+      amount: (cents / 100).toFixed(2),
+      amountWords: amountInWords(cents),
+      paymentFor: $('paymentFor').value.trim(),
+      mode,
+      modeOther: $('modeOther').value.trim()
+    };
+
+    const btn = $('submit2');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    msg.className = 'msg'; msg.textContent = '';
+    try {
+      const res = await fetch('/api/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ case: caseData, receipt })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Save failed. Please try again.');
+      freeze(receipt);
+    } catch (err) {
+      msg.className = 'msg error'; msg.textContent = err.message;
+    } finally {
+      btn.disabled = false; btn.textContent = 'Submit';
+    }
+  });
+
+  function freeze(r) {
+    const set = (k, v) => { document.querySelector(`.val[data-for="${k}"]`).textContent = v; };
+    set('receivedFrom', r.receivedFrom);
+    set('amount', 'S$ ' + Number(r.amount).toLocaleString('en-SG', { minimumFractionDigits: 2 }));
+    set('paymentFor', r.paymentFor);
+    set('mode', r.mode === 'Others' ? `Others – ${r.modeOther}` : r.mode);
+    $('amountWordsFinal').textContent = `(${r.amountWords})`;
+    document.querySelectorAll('#page2 .invalid').forEach(e => e.classList.remove('invalid'));
+    $('page2').classList.add('frozen');
+    const msg = $('msg2'); msg.className = 'msg ok'; msg.textContent = 'Saved to records.';
+    window.scrollTo(0, 0);
+  }
+
+  $('newEntry').addEventListener('click', () => {
+    $('page2').classList.remove('frozen');
+    $('form2').reset();
+    $('othersWrap').classList.remove('show');
+    updateWords();
+    $('msg2').textContent = '';
+    caseData = null;
+    resetForm1();
+    show('page1');
+  });
+
+  resetForm1();
+})();
+</script>
+</body>
+</html>
