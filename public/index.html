@@ -163,11 +163,14 @@
 
   /* ---------- Print (A4) ---------- */
   @media print {
-    body { background: #fff; }
+    html, body { background: #fff; height: auto !important; min-height: 0 !important; }
+    /* Height is never forced, so any printer margin can't push content onto a 2nd page */
     .sheet {
-      width: 210mm; min-height: 297mm; margin: 0; border-radius: 0; box-shadow: none;
-      padding: 18mm 20mm;
+      width: auto; height: auto; min-height: 0 !important; margin: 0; border-radius: 0; box-shadow: none;
+      padding: 14mm 16mm 0;
     }
+    #page1 { display: none !important; }
+    .receipt-box { break-inside: avoid; page-break-inside: avoid; }
     .actions, .msg, .no-print { display: none !important; }
     .frozen .field { display: flex !important; }
     .meta { flex-direction: row !important; }
@@ -195,7 +198,7 @@
       </div>
 
       <div class="field" id="f-sl">
-        <label for="slNo">S/L No:</label>
+        <label for="slNo">Bill No:</label>
         <input type="text" id="slNo" maxlength="40">
         <div class="hint">Auto-filled as n-YYYYMMDD-HHMM (1 = Dora Raj, 2 = Govinda Raju). Editable.</div>
       </div>
@@ -238,7 +241,7 @@
 
       <div class="meta">
         <div><strong>Date:</strong> <span id="receiptDate"></span></div>
-        <div><strong>Bill Number:</strong> <span id="billNo"></span></div>
+        <div><strong>Bill No:</strong> <span id="billNo"></span></div>
       </div>
 
       <form id="form2" novalidate autocomplete="off">
@@ -339,7 +342,7 @@
     e.preventDefault();
     const sl = $('slNo').value.trim();
     $('f-sl').classList.toggle('invalid', !sl);
-    if (!sl) { $('msg1').className = 'msg error'; $('msg1').textContent = 'S/L No is required.'; return; }
+    if (!sl) { $('msg1').className = 'msg error'; $('msg1').textContent = 'Bill No is required.'; return; }
     caseData = {
       lawyer: document.querySelector('input[name="lawyer"]:checked').value,
       slNo: sl,
@@ -406,7 +409,7 @@
   function startReceipt() {
     const d = new Date();
     $('receiptDate').textContent = d.toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric' });
-    $('billNo').textContent = Math.floor(100000 + Math.random() * 900000);
+    $('billNo').textContent = caseData.slNo;   // Bill No is set on page 1 only
   }
 
   document.querySelectorAll('input[name="mode"]').forEach(r =>
@@ -436,7 +439,6 @@
 
     const receipt = {
       date: $('receiptDate').textContent,
-      billNo: $('billNo').textContent,
       receivedFrom: $('receivedFrom').value.trim(),
       amount: (cents / 100).toFixed(2),
       amountWords: amountInWords(cents),
