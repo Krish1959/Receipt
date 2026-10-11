@@ -1,0 +1,16 @@
+{
+  "name": "raj-govin-receipts",
+  "version": "2.0.0",
+  "description": "Raj Govin Law Practice – case entry + digital receipt service, logged to Google Sheets",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "googleapis": "^144.0.0"
+  }
+}
