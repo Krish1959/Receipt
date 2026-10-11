@@ -5,15 +5,16 @@ const express = require('express');
 const { google } = require('googleapis');
 
 const PORT = process.env.PORT || 3000;
-const SHEET_ID = process.env.GOOGLE_SHEET_ID;
-const SHEET_TAB = process.env.GOOGLE_SHEET_TAB || 'Records';
+const SHEET_ID = (process.env.GOOGLE_SHEET_ID || '').trim().replace(/^["']|["']$/g, '');
+const SHEET_TAB = (process.env.GOOGLE_SHEET_TAB || 'Records').trim();
 const DRY_RUN = !process.env.GOOGLE_CREDENTIALS_JSON || !SHEET_ID;
 
 const HEADERS = [
-  'Timestamp (SGT)', 'Lawyer', 'S/L No', 'Case Category', 'Item 1', 'Item 2', 'Remarks',
-  'Receipt Date', 'Bill No', 'Received From', 'Amount (S$)', 'Amount in Words',
+  'Timestamp (SGT)', 'Lawyer', 'Bill No', 'Case Category', 'Item 1', 'Item 2', 'Remarks',
+  'Receipt Date', 'Received From', 'Amount (S$)', 'Amount in Words',
   'Payment For', 'Mode of Payment'
 ];
+const HEADER_RANGE = 'A1:N1'; // one wider than HEADERS so an old extra column is cleared
 
 const LAWYERS = ['Dora Raj', 'Govinda Raju'];
 const MODES = ['PayNow', 'Cash', 'Others'];
@@ -48,14 +49,16 @@ async function ensureHeader() {
     });
   }
   const res = await api.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID, range: `'${SHEET_TAB}'!A1:N1`
+    spreadsheetId: SHEET_ID, range: `'${SHEET_TAB}'!${HEADER_RANGE}`
   });
-  if (!res.data.values || !res.data.values.length) {
+  const current = (res.data.values && res.data.values[0]) || [];
+  if (current.join('|') !== HEADERS.join('|')) {
+    // Write (or upgrade) the header row; blank out any leftover old column
     await api.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `'${SHEET_TAB}'!A1`,
+      range: `'${SHEET_TAB}'!${HEADER_RANGE}`,
       valueInputOption: 'RAW',
-      requestBody: { values: [HEADERS] }
+      requestBody: { values: [[...HEADERS, '']] }
     });
   }
   headerChecked = true;
@@ -91,7 +94,24 @@ const app = express();
 app.use(express.json({ limit: '20kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/healthz', (_req, res) => res.json({ ok: true, sheets: DRY_RUN ? 'dry-run' : 'connected' }));
+// Real end-to-end check: reads the sheet and tests write access.
+app.get('/healthz', async (_req, res) => {
+  if (DRY_RUN) return res.json({ ok: true, sheets: 'dry-run', reason: 'GOOGLE_CREDENTIALS_JSON or GOOGLE_SHEET_ID not set' });
+  let serviceAccount = 'unreadable';
+  try { serviceAccount = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON).client_email; } catch (_) {}
+  try {
+    await ensureHeader();                       // needs read + write
+    res.json({ ok: true, sheets: 'connected', serviceAccount, sheetId: SHEET_ID, tab: SHEET_TAB });
+  } catch (err) {
+    res.status(500).json({
+      ok: false, sheets: 'error', serviceAccount, sheetId: SHEET_ID,
+      error: err.message,
+      fix: /permission/i.test(err.message)
+        ? `Share the sheet with ${serviceAccount} as Editor`
+        : /not found/i.test(err.message) ? 'Check GOOGLE_SHEET_ID' : 'Check credentials and that the Google Sheets API is enabled'
+    });
+  }
+});
 
 app.post('/api/records', async (req, res) => {
   const { case: c = {}, receipt: r = {} } = req.body || {};
@@ -102,7 +122,7 @@ app.post('/api/records', async (req, res) => {
   const errors = [];
 
   if (!LAWYERS.includes(lawyer)) errors.push('Lawyer');
-  if (!clean(c.slNo)) errors.push('S/L No');
+  if (!clean(c.slNo)) errors.push('Bill No');
   if (!clean(r.receivedFrom)) errors.push('Received from');
   if (!Number.isFinite(amount) || amount <= 0 || amount > 999999999.99) errors.push('Amount');
   if (!clean(r.paymentFor)) errors.push('Payment For');
@@ -119,7 +139,6 @@ app.post('/api/records', async (req, res) => {
     clean(c.item2, 1000),
     clean(c.remarks, 1000),
     clean(r.date, 30),
-    clean(r.billNo, 10),
     clean(r.receivedFrom),
     amount.toFixed(2),
     clean(r.amountWords, 500),
