@@ -9,12 +9,16 @@ const SHEET_ID = (process.env.GOOGLE_SHEET_ID || '').trim().replace(/^["']|["']$
 const SHEET_TAB = (process.env.GOOGLE_SHEET_TAB || 'Records').trim();
 const DRY_RUN = !process.env.GOOGLE_CREDENTIALS_JSON || !SHEET_ID;
 
+// Columns 1–17 follow the office ledger order exactly (two blank spacer columns kept).
+// Columns 18–22 are extra details collected by the app.
 const HEADERS = [
-  'Timestamp (SGT)', 'Lawyer', 'Bill No', 'Case Category', 'Item 1', 'Item 2', 'Remarks',
-  'Receipt Date', 'Received From', 'Amount (S$)', 'Amount in Words',
-  'Payment For', 'Mode of Payment'
+  'DATE', 'CLIENT', 'SUBJECT', 'O/R DAT', 'O/R', 'MATTER', 'AMOUNT', 'DIS/INC', 'NETT',
+  'SHARE', 'SALARY', 'GOVIN', 'RAJ', '', 'RENT', '', 'TEL/IT',
+  'LAWYER', 'PAYMENT FOR', 'MODE OF PAYMENT', 'AMOUNT IN WORDS', 'TIMESTAMP (SGT)'
 ];
-const HEADER_RANGE = 'A1:N1'; // one wider than HEADERS so an old extra column is cleared
+const HEADER_RANGE = 'A1:V1';
+const HIGHLIGHT_COLS = [14, 16];               // RENT, TEL/IT (0-based) – yellow like the ledger
+const MONEY_KEYS = ['disInc', 'share', 'salary', 'govin', 'raj', 'rent', 'telIt'];
 
 const LAWYERS = ['Dora Raj', 'Govinda Raju'];
 const MODES = ['PayNow', 'Cash', 'Others'];
@@ -41,24 +45,55 @@ async function ensureHeader() {
   if (headerChecked) return;
   const api = getSheets();
   const meta = await api.spreadsheets.get({ spreadsheetId: SHEET_ID });
-  const exists = meta.data.sheets.some(s => s.properties.title === SHEET_TAB);
-  if (!exists) {
-    await api.spreadsheets.batchUpdate({
+  let tab = meta.data.sheets.find(s => s.properties.title === SHEET_TAB);
+  if (!tab) {
+    const added = await api.spreadsheets.batchUpdate({
       spreadsheetId: SHEET_ID,
       requestBody: { requests: [{ addSheet: { properties: { title: SHEET_TAB } } }] }
     });
+    tab = { properties: added.data.replies[0].addSheet.properties };
   }
+  const tabId = tab.properties.sheetId;
+
   const res = await api.spreadsheets.values.get({
     spreadsheetId: SHEET_ID, range: `'${SHEET_TAB}'!${HEADER_RANGE}`
   });
   const current = (res.data.values && res.data.values[0]) || [];
-  if (current.join('|') !== HEADERS.join('|')) {
-    // Write (or upgrade) the header row; blank out any leftover old column
+  const norm = arr => HEADERS.map((_, i) => String(arr[i] ?? '')).join('|');
+  if (norm(current) !== norm(HEADERS)) {
     await api.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
       range: `'${SHEET_TAB}'!${HEADER_RANGE}`,
       valueInputOption: 'RAW',
-      requestBody: { values: [[...HEADERS, '']] }
+      requestBody: { values: [HEADERS] }
+    });
+    // Bold header, freeze row 1, yellow RENT / TEL/IT headers
+    await api.spreadsheets.batchUpdate({
+      spreadsheetId: SHEET_ID,
+      requestBody: {
+        requests: [
+          {
+            repeatCell: {
+              range: { sheetId: tabId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: HEADERS.length },
+              cell: { userEnteredFormat: { textFormat: { bold: true } } },
+              fields: 'userEnteredFormat.textFormat.bold'
+            }
+          },
+          ...HIGHLIGHT_COLS.map(c => ({
+            repeatCell: {
+              range: { sheetId: tabId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: c, endColumnIndex: c + 1 },
+              cell: { userEnteredFormat: { backgroundColor: { red: 1, green: 1, blue: 0 } } },
+              fields: 'userEnteredFormat.backgroundColor'
+            }
+          })),
+          {
+            updateSheetProperties: {
+              properties: { sheetId: tabId, gridProperties: { frozenRowCount: 1 } },
+              fields: 'gridProperties.frozenRowCount'
+            }
+          }
+        ]
+      }
     });
   }
   headerChecked = true;
@@ -73,7 +108,7 @@ async function appendRow(row) {
   await getSheets().spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
     range: `'${SHEET_TAB}'!A1`,
-    valueInputOption: 'RAW',          // stored as plain text – no formula execution
+    valueInputOption: 'RAW',          // text stored as-is (no formula execution); numbers stay numeric
     insertDataOption: 'INSERT_ROWS',
     requestBody: { values: [row] }
   });
@@ -81,6 +116,15 @@ async function appendRow(row) {
 
 /* ---------- Helpers ---------- */
 const clean = (v, max = 300) => String(v ?? '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max);
+
+// '' -> '' (blank cell); valid amount -> Number with 2 dp; invalid -> NaN
+function money(v) {
+  const s = clean(v, 20).replace(/[,\s$]/g, '');
+  if (!s) return '';
+  if (!/^\d+(\.\d{1,2})?$/.test(s)) return NaN;
+  const n = Math.round(parseFloat(s) * 100) / 100;
+  return n <= 999999999.99 ? n : NaN;
+}
 
 function sgtNow() {
   return new Date().toLocaleString('en-SG', {
@@ -114,36 +158,50 @@ app.get('/healthz', async (_req, res) => {
 });
 
 app.post('/api/records', async (req, res) => {
-  const { case: c = {}, receipt: r = {} } = req.body || {};
+  const { case: c = {}, accounts: a = {}, receipt: r = {} } = req.body || {};
 
   const lawyer = clean(c.lawyer, 50);
   const mode = clean(r.mode, 20);
-  const amount = Number(r.amount);
+  const amount = money(r.amount);
+  const m = Object.fromEntries(MONEY_KEYS.map(k => [k, money(a[k])]));
   const errors = [];
 
   if (!LAWYERS.includes(lawyer)) errors.push('Lawyer');
   if (!clean(c.slNo)) errors.push('Bill No');
   if (!clean(r.receivedFrom)) errors.push('Received from');
-  if (!Number.isFinite(amount) || amount <= 0 || amount > 999999999.99) errors.push('Amount');
+  if (amount === '' || Number.isNaN(amount) || amount <= 0) errors.push('Amount');
   if (!clean(r.paymentFor)) errors.push('Payment For');
   if (!MODES.includes(mode)) errors.push('Mode of Payment');
   if (mode === 'Others' && !clean(r.modeOther)) errors.push('Mode of Payment (Others)');
+  MONEY_KEYS.forEach(k => { if (Number.isNaN(m[k])) errors.push(k); });
   if (errors.length) return res.status(400).json({ ok: false, error: `Please check: ${errors.join(', ')}` });
 
+  const nett = Math.round((amount - (m.disInc || 0)) * 100) / 100;
+  const receiptDate = clean(r.date, 30);
+
   const row = [
-    sgtNow(),
-    lawyer,
-    clean(c.slNo, 40),
-    clean(c.caseCategory),
-    clean(c.item1, 1000),
-    clean(c.item2, 1000),
-    clean(c.remarks, 1000),
-    clean(r.date, 30),
-    clean(r.receivedFrom),
-    amount.toFixed(2),
-    clean(r.amountWords, 500),
-    clean(r.paymentFor, 500),
-    mode === 'Others' ? `Others – ${clean(r.modeOther, 100)}` : mode
+    receiptDate,                       // DATE
+    clean(r.receivedFrom),             // CLIENT
+    clean(c.caseCategory),             // SUBJECT
+    receiptDate,                       // O/R DAT
+    clean(c.slNo, 40),                 // O/R (Bill No)
+    clean(a.matter, 500),              // MATTER
+    amount,                            // AMOUNT
+    m.disInc,                          // DIS/INC
+    nett,                              // NETT
+    m.share,                           // SHARE
+    m.salary,                          // SALARY
+    m.govin,                           // GOVIN
+    m.raj,                             // RAJ
+    '',                                // (spacer)
+    m.rent,                            // RENT
+    '',                                // (spacer)
+    m.telIt,                           // TEL/IT
+    lawyer,                            // LAWYER
+    clean(r.paymentFor, 500),          // PAYMENT FOR
+    mode === 'Others' ? `Others – ${clean(r.modeOther, 100)}` : mode,
+    clean(r.amountWords, 500),         // AMOUNT IN WORDS
+    sgtNow()                           // TIMESTAMP (SGT)
   ];
 
   try {

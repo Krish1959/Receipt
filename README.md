@@ -1,6 +1,6 @@
 # Raj Govin Law Practice – Case Entry & Receipt Service
 
-Two-step web form (Case Entry → Receipt). On final Submit, both forms are saved as **one row** in a Google Sheet, and the receipt freezes into an A4 print layout.
+Three-step web form (Case Entry → Accounts → Receipt). On final Submit, all three pages are saved as **one row** in a Google Sheet, and the receipt freezes into an A4 print layout.
 
 ```
 raj-govin-receipts/
@@ -12,9 +12,12 @@ raj-govin-receipts/
 ```
 
 ## Sheet columns
-Timestamp (SGT) · Lawyer · S/L No · Case Category · Item 1 · Item 2 · Remarks · Receipt Date · Bill No · Received From · Amount (S$) · Amount in Words · Payment For · Mode of Payment
+Ledger order (1–17): DATE · CLIENT · SUBJECT · O/R DAT · O/R · MATTER · AMOUNT · DIS/INC · NETT · SHARE · SALARY · GOVIN · RAJ · *(blank)* · RENT · *(blank)* · TEL/IT
+Extras (18–22): LAWYER · PAYMENT FOR · MODE OF PAYMENT · AMOUNT IN WORDS · TIMESTAMP (SGT)
 
-The header row is written automatically on the first save.
+- O/R = Bill No (`1-YYYYMMDD-HHMM/A` Dora Raj, `2-YYYYMMDD-HHMM/B` Govinda Raju), set on page 1 only
+- DATE and O/R DAT = receipt date; NETT = AMOUNT − DIS/INC (auto)
+- Header row is written, bolded, frozen and RENT / TEL/IT highlighted yellow automatically on the first save.
 
 ---
 
@@ -23,7 +26,7 @@ The header row is written automatically on the first save.
 | Env var | What it is | Secret? |
 |---|---|---|
 | `GOOGLE_CREDENTIALS_JSON` | Full contents of the service-account JSON key | **Yes** |
-| `GOOGLE_SHEET_ID` | ID of the Google Sheet in the `Raj&Raju` folder | Yes (keep private) |
+| `GOOGLE_SHEET_ID` | ID of the Google Sheet in the `Receipts` folder | Yes (keep private) |
 | `GOOGLE_SHEET_TAB` | Tab name, default `Records` | No |
 
 No Gmail password is used. The app signs in as a Google *service account* that you share the sheet with.
