@@ -13,7 +13,9 @@ raj-govin-receipts/
 
 ## Sheet columns
 Ledger order (1–17): DATE · CLIENT · SUBJECT · O/R DAT · O/R · MATTER · AMOUNT · DIS/INC · NETT · SHARE · SALARY · GOVIN · RAJ · *(blank)* · RENT · *(blank)* · TEL/IT
-Extras (18–22): LAWYER · PAYMENT FOR · MODE OF PAYMENT · AMOUNT IN WORDS · TIMESTAMP (SGT)
+Extras (18–20): LAWYER · MODE OF PAYMENT · TIMESTAMP (SGT)
+
+- MATTER = "Payment For" typed on the receipt (page 3); one input serves both
 
 - O/R = Bill No (`1-YYYYMMDD-HHMM/A` Dora Raj, `2-YYYYMMDD-HHMM/B` Govinda Raju), set on page 1 only
 - DATE and O/R DAT = receipt date; NETT = AMOUNT − DIS/INC (auto)

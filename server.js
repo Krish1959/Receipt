@@ -10,13 +10,14 @@ const SHEET_TAB = (process.env.GOOGLE_SHEET_TAB || 'Records').trim();
 const DRY_RUN = !process.env.GOOGLE_CREDENTIALS_JSON || !SHEET_ID;
 
 // Columns 1–17 follow the office ledger order exactly (two blank spacer columns kept).
-// Columns 18–22 are extra details collected by the app.
+// Columns 18–20 are extra details collected by the app.
+// MATTER = "Payment For" from the receipt (one input, used on the receipt and in the ledger).
 const HEADERS = [
   'DATE', 'CLIENT', 'SUBJECT', 'O/R DAT', 'O/R', 'MATTER', 'AMOUNT', 'DIS/INC', 'NETT',
   'SHARE', 'SALARY', 'GOVIN', 'RAJ', '', 'RENT', '', 'TEL/IT',
-  'LAWYER', 'PAYMENT FOR', 'MODE OF PAYMENT', 'AMOUNT IN WORDS', 'TIMESTAMP (SGT)'
+  'LAWYER', 'MODE OF PAYMENT', 'TIMESTAMP (SGT)'
 ];
-const HEADER_RANGE = 'A1:V1';
+const HEADER_RANGE = 'A1:V1';                  // 2 wider than HEADERS so old extra headers are cleared
 const HIGHLIGHT_COLS = [14, 16];               // RENT, TEL/IT (0-based) – yellow like the ledger
 const MONEY_KEYS = ['disInc', 'share', 'salary', 'govin', 'raj', 'rent', 'telIt'];
 
@@ -65,7 +66,7 @@ async function ensureHeader() {
       spreadsheetId: SHEET_ID,
       range: `'${SHEET_TAB}'!${HEADER_RANGE}`,
       valueInputOption: 'RAW',
-      requestBody: { values: [HEADERS] }
+      requestBody: { values: [[...HEADERS, '', '']] }
     });
     // Bold header, freeze row 1, yellow RENT / TEL/IT headers
     await api.spreadsheets.batchUpdate({
@@ -185,7 +186,7 @@ app.post('/api/records', async (req, res) => {
     clean(c.caseCategory),             // SUBJECT
     receiptDate,                       // O/R DAT
     clean(c.slNo, 40),                 // O/R (Bill No)
-    clean(a.matter, 500),              // MATTER
+    clean(r.paymentFor, 500),          // MATTER (= Payment For on the receipt)
     amount,                            // AMOUNT
     m.disInc,                          // DIS/INC
     nett,                              // NETT
@@ -198,9 +199,7 @@ app.post('/api/records', async (req, res) => {
     '',                                // (spacer)
     m.telIt,                           // TEL/IT
     lawyer,                            // LAWYER
-    clean(r.paymentFor, 500),          // PAYMENT FOR
-    mode === 'Others' ? `Others – ${clean(r.modeOther, 100)}` : mode,
-    clean(r.amountWords, 500),         // AMOUNT IN WORDS
+    mode === 'Others' ? `Others – ${clean(r.modeOther, 100)}` : mode,   // MODE OF PAYMENT
     sgtNow()                           // TIMESTAMP (SGT)
   ];
 
