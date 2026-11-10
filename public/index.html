@@ -70,6 +70,13 @@
   .form-sub { text-align: center; color: var(--muted); font-size: 13px; margin: 4px 0 0; }
   hr.rule { border: 0; border-top: 2px solid var(--navy); margin: 16px 0 18px; }
 
+  .ref {
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 16px;
+    background: var(--navy-soft); border-radius: 6px; padding: 10px 12px;
+    font-size: 14px; margin-bottom: 18px;
+  }
+  .ref strong { color: var(--navy); }
+
   /* ---------- Fields ---------- */
   .field { margin-bottom: 16px; }
   .field > label, .field > .label {
@@ -96,6 +103,18 @@
   .hint { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
   #amountWords { font-style: italic; color: var(--navy); }
   #amountWords.empty { color: var(--muted); }
+
+  /* Money grid on page 2 */
+  .money-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0 12px; }
+  .money-grid .field input { text-align: right; }
+  .money-grid .field.hl > label::after {
+    content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: #f2c200; margin-left: 6px; vertical-align: middle;
+  }
+  .section-label {
+    font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); margin: 6px 0 10px;
+  }
 
   .choices { display: flex; flex-wrap: wrap; gap: 10px; border: 1px solid transparent; border-radius: 6px; }
   .choice {
@@ -128,7 +147,7 @@
   .btn {
     flex: 1; min-height: 48px; font: inherit; font-weight: 600; font-size: 16px;
     border-radius: 6px; border: 1px solid var(--navy); cursor: pointer;
-    background: var(--navy); color: #fff;
+    background: var(--navy); color: #fff; padding: 0 8px;
   }
   .btn.ghost { background: #fff; color: var(--navy); }
   .btn:disabled { opacity: .6; cursor: wait; }
@@ -169,7 +188,7 @@
       width: auto; height: auto; min-height: 0 !important; margin: 0; border-radius: 0; box-shadow: none;
       padding: 14mm 16mm 0;
     }
-    #page1 { display: none !important; }
+    #page1, #page2 { display: none !important; }
     .receipt-box { break-inside: avoid; page-break-inside: avoid; }
     .actions, .msg, .no-print { display: none !important; }
     .frozen .field { display: flex !important; }
@@ -185,22 +204,22 @@
   <!-- ================= PAGE 1 : CASE ENTRY ================= -->
   <section class="view active" id="page1" aria-labelledby="p1title">
     <h2 class="form-title" id="p1title">Case Entry</h2>
-    <p class="form-sub">Step 1 of 2</p>
+    <p class="form-sub">Step 1 of 3</p>
     <hr class="rule">
 
     <form id="form1" novalidate autocomplete="off">
       <div class="field" id="f-lawyer">
         <span class="label">Lawyer's Name:</span>
         <div class="choices" role="radiogroup">
-          <label class="choice"><input type="radio" name="lawyer" value="Dora Raj" data-n="1" checked>Dora Raj</label>
-          <label class="choice"><input type="radio" name="lawyer" value="Govinda Raju" data-n="2">Govinda Raju</label>
+          <label class="choice"><input type="radio" name="lawyer" value="Dora Raj" data-n="1" data-s="A" checked>Dora Raj</label>
+          <label class="choice"><input type="radio" name="lawyer" value="Govinda Raju" data-n="2" data-s="B">Govinda Raju</label>
         </div>
       </div>
 
       <div class="field" id="f-sl">
         <label for="slNo">Bill No:</label>
         <input type="text" id="slNo" maxlength="40">
-        <div class="hint">Auto-filled as n-YYYYMMDD-HHMM (1 = Dora Raj, 2 = Govinda Raju). Editable.</div>
+        <div class="hint">Auto-filled as n-YYYYMMDD-HHMM/x (1…/A = Dora Raj, 2…/B = Govinda Raju). Refreshes when the lawyer is changed. Editable.</div>
       </div>
 
       <div class="field">
@@ -208,33 +227,56 @@
         <input type="text" id="caseCategory" placeholder="e.g. Divorce / Theft" maxlength="300">
       </div>
 
-      <div class="field">
-        <label for="item1">Item 1:</label>
-        <input type="text" id="item1" placeholder="The data to be entered into Excel" maxlength="1000">
-      </div>
-
-      <div class="field">
-        <label for="item2">Item 2:</label>
-        <input type="text" id="item2" placeholder="The data to be entered into Excel" maxlength="1000">
-      </div>
-
-      <div class="field">
-        <label for="remarks">Remarks:</label>
-        <textarea id="remarks" maxlength="1000"></textarea>
-      </div>
-
       <div class="actions">
         <button type="button" class="btn ghost" id="cancel1">Cancel</button>
-        <button type="submit" class="btn">Submit</button>
+        <button type="submit" class="btn">Next</button>
       </div>
       <p class="msg" id="msg1" role="status"></p>
     </form>
   </section>
 
-  <!-- ================= PAGE 2 : RECEIPT ================= -->
+  <!-- ================= PAGE 2 : ACCOUNTS ================= -->
   <section class="view" id="page2" aria-labelledby="p2title">
+    <h2 class="form-title" id="p2title">Accounts</h2>
+    <p class="form-sub">Step 2 of 3</p>
+    <hr class="rule">
+
+    <div class="ref">
+      <div><strong>Bill No:</strong> <span id="refBill"></span></div>
+      <div><strong>Subject:</strong> <span id="refSubject"></span></div>
+    </div>
+
+    <form id="form2" novalidate autocomplete="off">
+      <div class="field">
+        <label for="matter">Matter:</label>
+        <input type="text" id="matter" placeholder="Matter description" maxlength="500">
+      </div>
+
+      <p class="section-label">Amounts (S$) – leave blank if not applicable</p>
+      <div class="money-grid">
+        <div class="field" data-key="disInc"><label for="disInc">Dis/Inc</label><input type="text" id="disInc" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
+        <div class="field" data-key="share"><label for="share">Share</label><input type="text" id="share" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
+        <div class="field" data-key="salary"><label for="salary">Salary</label><input type="text" id="salary" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
+        <div class="field" data-key="govin"><label for="govin">Govin</label><input type="text" id="govin" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
+        <div class="field" data-key="raj"><label for="raj">Raj</label><input type="text" id="raj" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
+        <div class="field hl" data-key="rent"><label for="rent">Rent</label><input type="text" id="rent" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
+        <div class="field hl" data-key="telIt"><label for="telIt">Tel/IT</label><input type="text" id="telIt" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
+      </div>
+      <div class="hint">Nett (Amount − Dis/Inc) is calculated automatically after the receipt amount is entered.</div>
+
+      <div class="actions">
+        <button type="button" class="btn ghost" id="back2">Back</button>
+        <button type="button" class="btn ghost" id="cancel2">Cancel</button>
+        <button type="submit" class="btn">Next</button>
+      </div>
+      <p class="msg" id="msg2" role="status"></p>
+    </form>
+  </section>
+
+  <!-- ================= PAGE 3 : RECEIPT ================= -->
+  <section class="view" id="page3" aria-labelledby="p3title">
     <div class="receipt-box">
-      <h1 class="title" id="p2title">Raj Govin Law Practice</h1>
+      <h1 class="title" id="p3title">Raj Govin Law Practice</h1>
       <p class="address">People's Park Centre, #05-48, Singapore 058357</p>
       <p class="doc-label">RECEIPT</p>
       <hr class="rule">
@@ -244,7 +286,7 @@
         <div><strong>Bill No:</strong> <span id="billNo"></span></div>
       </div>
 
-      <form id="form2" novalidate autocomplete="off">
+      <form id="form3" novalidate autocomplete="off">
         <div class="field" id="f-from">
           <label for="receivedFrom">Received from:</label>
           <div class="stack">
@@ -294,14 +336,14 @@
         <p class="note">** This is a digital receipt - No signature required **</p>
 
         <div class="actions edit-only">
-          <button type="button" class="btn ghost" id="back2">Back</button>
-          <button type="submit" class="btn" id="submit2">Submit</button>
+          <button type="button" class="btn ghost" id="back3">Back</button>
+          <button type="submit" class="btn" id="submit3">Submit</button>
         </div>
         <div class="actions print-actions">
           <button type="button" class="btn ghost" id="newEntry">New Entry</button>
           <button type="button" class="btn" onclick="window.print()">Print</button>
         </div>
-        <p class="msg" id="msg2" role="status"></p>
+        <p class="msg" id="msg3" role="status"></p>
       </form>
     </div>
   </section>
@@ -312,28 +354,42 @@
 (function () {
   const $ = id => document.getElementById(id);
   const pad = n => String(n).padStart(2, '0');
+  const MONEY_KEYS = ['disInc', 'share', 'salary', 'govin', 'raj', 'rent', 'telIt'];
   let caseData = null;
+  let accounts = null;
 
   /* ---------- Page switching ---------- */
   function show(id) {
     document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === id));
     window.scrollTo(0, 0);
   }
+  function setMsg(id, text, cls) { const m = $(id); m.className = 'msg' + (cls ? ' ' + cls : ''); m.textContent = text || ''; }
+
+  /* ---------- Money parsing ---------- */
+  // Returns cents (integer) or null if invalid; blank -> 0 when allowBlank
+  function parseMoney(raw, allowBlank) {
+    const s = String(raw).replace(/[,\s$]/g, '');
+    if (!s) return allowBlank ? 0 : null;
+    if (!/^\d+(\.\d{1,2})?$/.test(s)) return null;
+    const cents = Math.round(parseFloat(s) * 100);
+    return cents <= 99999999999 ? cents : null;
+  }
 
   /* ---------- Page 1 ---------- */
-  function buildSlNo() {
+  function buildBillNo() {
     const sel = document.querySelector('input[name="lawyer"]:checked');
     const n = sel ? sel.dataset.n : '1';
+    const s = sel ? sel.dataset.s : 'A';
     const d = new Date();
-    return `${n}-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+    return `${n}-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}/${s}`;
   }
   document.querySelectorAll('input[name="lawyer"]').forEach(r =>
-    r.addEventListener('change', () => { $('slNo').value = buildSlNo(); }));
+    r.addEventListener('change', () => { $('slNo').value = buildBillNo(); }));
 
   function resetForm1() {
     $('form1').reset();
-    $('slNo').value = buildSlNo();
-    $('msg1').textContent = '';
+    $('slNo').value = buildBillNo();
+    setMsg('msg1');
     document.querySelectorAll('#page1 .invalid').forEach(e => e.classList.remove('invalid'));
   }
   $('cancel1').addEventListener('click', resetForm1);
@@ -342,18 +398,44 @@
     e.preventDefault();
     const sl = $('slNo').value.trim();
     $('f-sl').classList.toggle('invalid', !sl);
-    if (!sl) { $('msg1').className = 'msg error'; $('msg1').textContent = 'Bill No is required.'; return; }
+    if (!sl) { setMsg('msg1', 'Bill No is required.', 'error'); return; }
     caseData = {
       lawyer: document.querySelector('input[name="lawyer"]:checked').value,
       slNo: sl,
-      caseCategory: $('caseCategory').value.trim(),
-      item1: $('item1').value.trim(),
-      item2: $('item2').value.trim(),
-      remarks: $('remarks').value.trim()
+      caseCategory: $('caseCategory').value.trim()
     };
-    $('msg1').textContent = '';
-    startReceipt();
+    setMsg('msg1');
+    $('refBill').textContent = caseData.slNo;
+    $('refSubject').textContent = caseData.caseCategory || '—';
     show('page2');
+  });
+
+  /* ---------- Page 2 ---------- */
+  function resetForm2() {
+    $('form2').reset();
+    setMsg('msg2');
+    document.querySelectorAll('#page2 .invalid').forEach(e => e.classList.remove('invalid'));
+  }
+  $('cancel2').addEventListener('click', resetForm2);
+  $('back2').addEventListener('click', () => show('page1'));
+
+  $('form2').addEventListener('submit', e => {
+    e.preventDefault();
+    const values = {};
+    let bad = false;
+    MONEY_KEYS.forEach(k => {
+      const raw = $(k).value.trim();
+      const cents = parseMoney(raw, true);
+      const field = document.querySelector(`#page2 .field[data-key="${k}"]`);
+      field.classList.toggle('invalid', cents === null);
+      if (cents === null) bad = true;
+      values[k] = raw && cents !== null ? (cents / 100).toFixed(2) : '';
+    });
+    if (bad) { setMsg('msg2', 'Please enter valid amounts, e.g. 120.50', 'error'); return; }
+    accounts = { matter: $('matter').value.trim(), ...values };
+    setMsg('msg2');
+    startReceipt();
+    show('page3');
   });
 
   /* ---------- Amount in words ---------- */
@@ -378,12 +460,6 @@
     if (n) out.push(under1000(n));
     return out.join(' ');
   }
-  function parseAmount(raw) {
-    const s = String(raw).replace(/[,\s$]/g, '');
-    if (!/^\d+(\.\d{1,2})?$/.test(s)) return null;
-    const cents = Math.round(parseFloat(s) * 100);
-    return cents > 0 && cents <= 99999999999 ? cents : null;
-  }
   function amountInWords(totalCents) {
     const d = Math.floor(totalCents / 100), c = totalCents % 100;
     let txt;
@@ -395,17 +471,17 @@
   const WORDS_PLACEHOLDER = 'The amount in words will appear here automatically';
   function updateWords() {
     const raw = $('amount').value.trim();
-    const cents = parseAmount(raw);
+    const cents = parseMoney(raw, false);
     const el = $('amountWords');
     if (!raw) { el.textContent = WORDS_PLACEHOLDER; el.classList.add('empty'); return null; }
-    if (cents === null) { el.textContent = 'Enter a valid amount, e.g. 99.50'; el.classList.add('empty'); return null; }
+    if (cents === null || cents === 0) { el.textContent = 'Enter a valid amount, e.g. 99.50'; el.classList.add('empty'); return null; }
     el.textContent = amountInWords(cents);
     el.classList.remove('empty');
     return cents;
   }
   $('amount').addEventListener('input', updateWords);
 
-  /* ---------- Page 2 ---------- */
+  /* ---------- Page 3 ---------- */
   function startReceipt() {
     const d = new Date();
     $('receiptDate').textContent = d.toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -419,11 +495,10 @@
       if (isOther) $('modeOther').focus(); else $('modeOther').value = '';
     }));
 
-  $('back2').addEventListener('click', () => show('page1'));
+  $('back3').addEventListener('click', () => show('page2'));
 
-  $('form2').addEventListener('submit', async e => {
+  $('form3').addEventListener('submit', async e => {
     e.preventDefault();
-    const msg = $('msg2');
     const cents = updateWords();
     const mode = document.querySelector('input[name="mode"]:checked').value;
     const checks = [
@@ -433,9 +508,7 @@
       ['f-mode', mode !== 'Others' || !!$('modeOther').value.trim()]
     ];
     checks.forEach(([id, ok]) => $(id).classList.toggle('invalid', !ok));
-    if (checks.some(([, ok]) => !ok)) {
-      msg.className = 'msg error'; msg.textContent = 'Please complete the highlighted fields.'; return;
-    }
+    if (checks.some(([, ok]) => !ok)) { setMsg('msg3', 'Please complete the highlighted fields.', 'error'); return; }
 
     const receipt = {
       date: $('receiptDate').textContent,
@@ -447,20 +520,20 @@
       modeOther: $('modeOther').value.trim()
     };
 
-    const btn = $('submit2');
+    const btn = $('submit3');
     btn.disabled = true; btn.textContent = 'Saving…';
-    msg.className = 'msg'; msg.textContent = '';
+    setMsg('msg3');
     try {
       const res = await fetch('/api/records', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ case: caseData, receipt })
+        body: JSON.stringify({ case: caseData, accounts, receipt })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || 'Save failed. Please try again.');
       freeze(receipt);
     } catch (err) {
-      msg.className = 'msg error'; msg.textContent = err.message;
+      setMsg('msg3', err.message, 'error');
     } finally {
       btn.disabled = false; btn.textContent = 'Submit';
     }
@@ -473,19 +546,20 @@
     set('paymentFor', r.paymentFor);
     set('mode', r.mode === 'Others' ? `Others – ${r.modeOther}` : r.mode);
     $('amountWordsFinal').textContent = `(${r.amountWords})`;
-    document.querySelectorAll('#page2 .invalid').forEach(e => e.classList.remove('invalid'));
-    $('page2').classList.add('frozen');
-    const msg = $('msg2'); msg.className = 'msg ok'; msg.textContent = 'Saved to records.';
+    document.querySelectorAll('#page3 .invalid').forEach(e => e.classList.remove('invalid'));
+    $('page3').classList.add('frozen');
+    setMsg('msg3', 'Saved to records.', 'ok');
     window.scrollTo(0, 0);
   }
 
   $('newEntry').addEventListener('click', () => {
-    $('page2').classList.remove('frozen');
-    $('form2').reset();
+    $('page3').classList.remove('frozen');
+    $('form3').reset();
     $('othersWrap').classList.remove('show');
     updateWords();
-    $('msg2').textContent = '';
-    caseData = null;
+    setMsg('msg3');
+    caseData = null; accounts = null;
+    resetForm2();
     resetForm1();
     show('page1');
   });
