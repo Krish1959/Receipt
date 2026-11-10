@@ -247,11 +247,6 @@
     </div>
 
     <form id="form2" novalidate autocomplete="off">
-      <div class="field">
-        <label for="matter">Matter:</label>
-        <input type="text" id="matter" placeholder="Matter description" maxlength="500">
-      </div>
-
       <p class="section-label">Amounts (S$) – leave blank if not applicable</p>
       <div class="money-grid">
         <div class="field" data-key="disInc"><label for="disInc">Dis/Inc</label><input type="text" id="disInc" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
@@ -308,7 +303,8 @@
         <div class="field" id="f-for">
           <label for="paymentFor">Payment For:</label>
           <div class="stack">
-            <input type="text" id="paymentFor" maxlength="500">
+            <input type="text" id="paymentFor" maxlength="500" placeholder="e.g. Legal fees – first consultation">
+            <div class="hint hint-live">Also saved as MATTER in the records.</div>
             <span class="val" data-for="paymentFor"></span>
           </div>
         </div>
@@ -432,7 +428,7 @@
       values[k] = raw && cents !== null ? (cents / 100).toFixed(2) : '';
     });
     if (bad) { setMsg('msg2', 'Please enter valid amounts, e.g. 120.50', 'error'); return; }
-    accounts = { matter: $('matter').value.trim(), ...values };
+    accounts = { ...values };
     setMsg('msg2');
     startReceipt();
     show('page3');
