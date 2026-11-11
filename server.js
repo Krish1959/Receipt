@@ -14,7 +14,7 @@ const DRY_RUN = !process.env.GOOGLE_CREDENTIALS_JSON || !SHEET_ID;
 // MATTER = "Payment For" from the receipt (one input, used on the receipt and in the ledger).
 const HEADERS = [
   'DATE', 'CLIENT', 'SUBJECT', 'O/R DAT', 'O/R', 'MATTER', 'AMOUNT', 'DIS/INC', 'NETT',
-  'SHARE', 'SALARY', 'GOVIN', 'RAJ', '', 'RENT', '', 'TEL/IT',
+  'SHARE(%)', 'SALARY', 'GOVIN', 'RAJ', '', 'RENT', '', 'TEL/IT',
   'LAWYER', 'MODE OF PAYMENT', 'TIMESTAMP (SGT)'
 ];
 const HEADER_RANGE = 'A1:V1';                  // 2 wider than HEADERS so old extra headers are cleared
@@ -22,6 +22,7 @@ const HIGHLIGHT_COLS = [14, 16];               // RENT, TEL/IT (0-based) – yel
 const MONEY_KEYS = ['disInc', 'share', 'salary', 'govin', 'raj', 'rent', 'telIt'];
 
 const LAWYERS = ['Dora Raj', 'Govinda Raju'];
+const LEAD_PCT = 70;                           // lead lawyer's share of AMOUNT; the other gets the rest
 const MODES = ['PayNow', 'Cash', 'Others'];
 
 /* ---------- Google Sheets client ---------- */
@@ -140,6 +141,11 @@ app.use(express.json({ limit: '20kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Real end-to-end check: reads the sheet and tests write access.
+// Link for the EXCEL button on the receipt page
+app.get('/api/config', (_req, res) => {
+  res.json({ sheetUrl: SHEET_ID ? `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit` : null });
+});
+
 app.get('/healthz', async (_req, res) => {
   if (DRY_RUN) return res.json({ ok: true, sheets: 'dry-run', reason: 'GOOGLE_CREDENTIALS_JSON or GOOGLE_SHEET_ID not set' });
   let serviceAccount = 'unreadable';
@@ -175,9 +181,28 @@ app.post('/api/records', async (req, res) => {
   if (!MODES.includes(mode)) errors.push('Mode of Payment');
   if (mode === 'Others' && !clean(r.modeOther)) errors.push('Mode of Payment (Others)');
   MONEY_KEYS.forEach(k => { if (Number.isNaN(m[k])) errors.push(k); });
+  if (typeof m.share === 'number' && m.share > 100) errors.push('Share (%) must be 0–100');
   if (errors.length) return res.status(400).json({ ok: false, error: `Please check: ${errors.join(', ')}` });
 
   const nett = Math.round((amount - (m.disInc || 0)) * 100) / 100;
+
+  // Default GOVIN / RAJ split (only where left blank):
+  //   /G (Govinda Raju) -> GOVIN 70%, RAJ 30%   |   /D (Dora Raj) -> RAJ 70%, GOVIN 30%
+  // Worked in cents so the two parts always add up exactly to AMOUNT.
+  const billNo = clean(c.slNo, 40);
+  const govinLead = /\/G\s*$/i.test(billNo) || (!/\/D\s*$/i.test(billNo) && lawyer === 'Govinda Raju');
+  const amountCents = Math.round(amount * 100);
+  const leadCents = Math.round(amountCents * LEAD_PCT / 100);
+  const autoGovin = (govinLead ? leadCents : amountCents - leadCents) / 100;
+  const autoRaj = (govinLead ? amountCents - leadCents : leadCents) / 100;
+  const cents = v => Math.round(v * 100);
+  if (m.govin === '' && m.raj === '') {          // both blank -> 70/30 split
+    m.govin = autoGovin; m.raj = autoRaj;
+  } else if (m.govin === '') {                   // only Raj typed -> Govin gets the rest
+    m.govin = Math.max(0, amountCents - cents(m.raj)) / 100;
+  } else if (m.raj === '') {                     // only Govin typed -> Raj gets the rest
+    m.raj = Math.max(0, amountCents - cents(m.govin)) / 100;
+  }                                              // both typed -> keep as entered
   const receiptDate = clean(r.date, 30);
 
   const row = [
@@ -185,12 +210,12 @@ app.post('/api/records', async (req, res) => {
     clean(r.receivedFrom),             // CLIENT
     clean(c.caseCategory),             // SUBJECT
     receiptDate,                       // O/R DAT
-    clean(c.slNo, 40),                 // O/R (Bill No)
+    billNo,                            // O/R (Bill No)
     clean(r.paymentFor, 500),          // MATTER (= Payment For on the receipt)
     amount,                            // AMOUNT
     m.disInc,                          // DIS/INC
     nett,                              // NETT
-    m.share,                           // SHARE
+    m.share,                           // SHARE(%)
     m.salary,                          // SALARY
     m.govin,                           // GOVIN
     m.raj,                             // RAJ
