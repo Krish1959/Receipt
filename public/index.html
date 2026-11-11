@@ -211,15 +211,15 @@
       <div class="field" id="f-lawyer">
         <span class="label">Lawyer's Name:</span>
         <div class="choices" role="radiogroup">
-          <label class="choice"><input type="radio" name="lawyer" value="Dora Raj" data-n="1" data-s="A" checked>Dora Raj</label>
-          <label class="choice"><input type="radio" name="lawyer" value="Govinda Raju" data-n="2" data-s="B">Govinda Raju</label>
+          <label class="choice"><input type="radio" name="lawyer" value="Dora Raj" data-n="1" data-s="D" checked>Dora Raj</label>
+          <label class="choice"><input type="radio" name="lawyer" value="Govinda Raju" data-n="2" data-s="G">Govinda Raju</label>
         </div>
       </div>
 
       <div class="field" id="f-sl">
         <label for="slNo">Bill No:</label>
         <input type="text" id="slNo" maxlength="40">
-        <div class="hint">Auto-filled as n-YYYYMMDD-HHMM/x (1…/A = Dora Raj, 2…/B = Govinda Raju). Refreshes when the lawyer is changed. Editable.</div>
+        <div class="hint">Auto-filled as n-YYYYMMDD-HHMM/x (1…/D = Dora Raj, 2…/G = Govinda Raju). Refreshes when the lawyer is changed. Editable.</div>
       </div>
 
       <div class="field">
@@ -250,14 +250,15 @@
       <p class="section-label">Amounts (S$) – leave blank if not applicable</p>
       <div class="money-grid">
         <div class="field" data-key="disInc"><label for="disInc">Dis/Inc</label><input type="text" id="disInc" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
-        <div class="field" data-key="share"><label for="share">Share</label><input type="text" id="share" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
+        <div class="field" data-key="share"><label for="share">Share (%)</label><input type="text" id="share" inputmode="decimal" placeholder="0" maxlength="13"></div>
         <div class="field" data-key="salary"><label for="salary">Salary</label><input type="text" id="salary" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
-        <div class="field" data-key="govin"><label for="govin">Govin</label><input type="text" id="govin" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
-        <div class="field" data-key="raj"><label for="raj">Raj</label><input type="text" id="raj" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
+        <div class="field" data-key="govin"><label for="govin">Govin</label><input type="text" id="govin" inputmode="decimal" placeholder="Auto" maxlength="13"></div>
+        <div class="field" data-key="raj"><label for="raj">Raj</label><input type="text" id="raj" inputmode="decimal" placeholder="Auto" maxlength="13"></div>
         <div class="field hl" data-key="rent"><label for="rent">Rent</label><input type="text" id="rent" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
         <div class="field hl" data-key="telIt"><label for="telIt">Tel/IT</label><input type="text" id="telIt" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
       </div>
-      <div class="hint">Nett (Amount − Dis/Inc) is calculated automatically after the receipt amount is entered.</div>
+      <div class="hint" id="splitHint"></div>
+      <div class="hint">Nett (Amount − Dis/Inc) is calculated automatically. Leave Govin / Raj blank for the automatic split. If you type one of them, the other gets the rest of the Amount.</div>
 
       <div class="actions">
         <button type="button" class="btn ghost" id="back2">Back</button>
@@ -337,6 +338,7 @@
         </div>
         <div class="actions print-actions">
           <button type="button" class="btn ghost" id="newEntry">New Entry</button>
+          <button type="button" class="btn ghost" id="excelBtn">EXCEL</button>
           <button type="button" class="btn" onclick="window.print()">Print</button>
         </div>
         <p class="msg" id="msg3" role="status"></p>
@@ -375,7 +377,7 @@
   function buildBillNo() {
     const sel = document.querySelector('input[name="lawyer"]:checked');
     const n = sel ? sel.dataset.n : '1';
-    const s = sel ? sel.dataset.s : 'A';
+    const s = sel ? sel.dataset.s : 'D';
     const d = new Date();
     return `${n}-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}/${s}`;
   }
@@ -403,6 +405,12 @@
     setMsg('msg1');
     $('refBill').textContent = caseData.slNo;
     $('refSubject').textContent = caseData.caseCategory || '—';
+    const govinLead = /\/G\s*$/i.test(sl) || (!/\/D\s*$/i.test(sl) && caseData.lawyer === 'Govinda Raju');
+    $('govin').placeholder = govinLead ? 'Auto 70%' : 'Auto 30%';
+    $('raj').placeholder = govinLead ? 'Auto 30%' : 'Auto 70%';
+    $('splitHint').textContent = govinLead
+      ? 'Automatic split for /G: Govin 70% · Raj 30% of the Amount.'
+      : 'Automatic split for /D: Raj 70% · Govin 30% of the Amount.';
     show('page2');
   });
 
@@ -427,6 +435,10 @@
       if (cents === null) bad = true;
       values[k] = raw && cents !== null ? (cents / 100).toFixed(2) : '';
     });
+    if (values.share !== '' && Number(values.share) > 100) {
+      document.querySelector('#page2 .field[data-key="share"]').classList.add('invalid');
+      setMsg('msg2', 'Share (%) must be between 0 and 100.', 'error'); return;
+    }
     if (bad) { setMsg('msg2', 'Please enter valid amounts, e.g. 120.50', 'error'); return; }
     accounts = { ...values };
     setMsg('msg2');
@@ -547,6 +559,11 @@
     setMsg('msg3', 'Saved to records.', 'ok');
     window.scrollTo(0, 0);
   }
+
+  /* ---------- EXCEL: open the records sheet ---------- */
+  let sheetUrl = 'https://docs.google.com/spreadsheets/d/1t3Ty5NRJ4X1SWkfJZ7wYdG6UdbIXB94ORPTtuFBZK4Y/edit?gid=0#gid=0';
+  fetch('/api/config').then(r => r.json()).then(c => { if (c && c.sheetUrl) sheetUrl = c.sheetUrl; }).catch(() => {});
+  $('excelBtn').addEventListener('click', () => window.open(sheetUrl, '_blank', 'noopener'));
 
   $('newEntry').addEventListener('click', () => {
     $('page3').classList.remove('frozen');
