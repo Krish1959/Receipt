@@ -105,7 +105,7 @@
   #amountWords { font-style: italic; color: var(--navy); }
   #amountWords.empty { color: var(--muted); }
 
-  /* Money grid on page 2 */
+  /* Money grid on the Accounts page */
   .money-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0 12px; }
   .money-grid .field input { text-align: right; }
   .money-grid .field.hl > label::after {
@@ -116,6 +116,12 @@
     font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
     color: var(--muted); margin: 6px 0 10px;
   }
+  .calc {
+    background: var(--navy-soft); border-radius: 6px; padding: 10px 12px;
+    font-size: 13.5px; margin: 4px 0 14px;
+  }
+  .calc div + div { margin-top: 4px; }
+  .calc strong { color: var(--navy); }
 
   .choices { display: flex; flex-wrap: wrap; gap: 10px; border: 1px solid transparent; border-radius: 6px; }
   .choice {
@@ -156,6 +162,8 @@
 
   /* ---------- Buttons ---------- */
   .actions { display: flex; gap: 10px; margin-top: 22px; }
+  .actions.wrap { flex-wrap: wrap; }
+  .actions.wrap .btn { flex: 1 1 110px; }
   .btn {
     flex: 1; min-height: 48px; font: inherit; font-weight: 600; font-size: 16px;
     border-radius: 6px; border: 1px solid var(--navy); cursor: pointer;
@@ -202,7 +210,9 @@
       width: auto; height: auto; min-height: 0 !important; margin: 0; border-radius: 0; box-shadow: none;
       padding: 14mm 16mm 0;
     }
+    /* Only the receipt ever prints – from whichever page is on screen */
     #page1, #page2 { display: none !important; }
+    #page3 { display: block !important; }
     .receipt-box { break-inside: avoid; page-break-inside: avoid; }
     .actions, .msg, .no-print { display: none !important; }
     .frozen .field { display: flex !important; }
@@ -249,42 +259,9 @@
     </form>
   </section>
 
-  <!-- ================= PAGE 2 : ACCOUNTS ================= -->
-  <section class="view" id="page2" aria-labelledby="p2title">
-    <h2 class="form-title" id="p2title">Accounts</h2>
-    <p class="form-sub">Step 2 of 3</p>
-    <hr class="rule">
-
-    <div class="ref">
-      <div><strong>Bill No:</strong> <span id="refBill"></span></div>
-      <div><strong>Subject:</strong> <span id="refSubject"></span></div>
-    </div>
-
-    <form id="form2" novalidate autocomplete="off">
-      <p class="section-label">Amounts (S$) – leave blank if not applicable</p>
-      <div class="money-grid">
-        <div class="field" data-key="disInc"><label for="disInc">Dis/Inc</label><input type="text" id="disInc" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
-        <div class="field" data-key="share"><label for="share">Share (%)</label><input type="text" id="share" inputmode="decimal" placeholder="0" maxlength="13"></div>
-        <div class="field" data-key="salary"><label for="salary">Salary</label><input type="text" id="salary" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
-        <div class="field" data-key="govin"><label for="govin">Govin</label><input type="text" id="govin" inputmode="decimal" placeholder="Auto" maxlength="13"></div>
-        <div class="field" data-key="raj"><label for="raj">Raj</label><input type="text" id="raj" inputmode="decimal" placeholder="Auto" maxlength="13"></div>
-        <div class="field hl" data-key="rent"><label for="rent">Rent</label><input type="text" id="rent" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
-        <div class="field hl" data-key="telIt"><label for="telIt">Tel/IT</label><input type="text" id="telIt" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
-      </div>
-      <div class="hint" id="splitHint"></div>
-      <div class="hint">Nett (Amount − Dis/Inc) is calculated automatically. Leave Govin / Raj blank for the automatic split. If you type one of them, the other gets the rest of the Amount.</div>
-
-      <div class="actions">
-        <button type="button" class="btn ghost" id="back2">Back</button>
-        <button type="button" class="btn ghost" id="cancel2">Cancel</button>
-        <button type="submit" class="btn">Next</button>
-      </div>
-      <p class="msg" id="msg2" role="status"></p>
-    </form>
-  </section>
-
-  <!-- ================= PAGE 3 : RECEIPT ================= -->
+  <!-- ================= PAGE 2 (2nd in the flow) : RECEIPT ================= -->
   <section class="view" id="page3" aria-labelledby="p3title">
+    <p class="form-sub edit-only no-print">Step 2 of 3 · the client's receipt</p>
     <div class="receipt-box">
       <h1 class="title" id="p3title">Raj Govin Law Practice</h1>
       <p class="address">People's Park Centre, #05-48, Singapore 058357</p>
@@ -355,7 +332,7 @@
           <button type="submit" class="btn" id="submit3">Submit</button>
         </div>
         <div class="actions print-actions">
-          <button type="button" class="btn ghost" id="newEntry">New Entry</button>
+          <button type="button" class="btn ghost" id="nextAccounts">Next: Accounts</button>
           <button type="button" class="btn ghost" id="excelBtn">EXCEL</button>
           <button type="button" class="btn warn" id="tallyRetry" hidden>Retry Tally</button>
           <button type="button" class="btn" onclick="window.print()">Print</button>
@@ -363,6 +340,46 @@
         <p class="msg" id="msg3" role="status"></p>
       </form>
     </div>
+  </section>
+
+  <!-- ================= PAGE 3 (last in the flow) : ACCOUNTS ================= -->
+  <section class="view" id="page2" aria-labelledby="p2title">
+    <h2 class="form-title" id="p2title">Accounts</h2>
+    <p class="form-sub">Step 3 of 3 · office use – the receipt is already saved and printed</p>
+    <hr class="rule">
+
+    <div class="ref">
+      <div><strong>Bill No:</strong> <span id="refBill"></span></div>
+      <div><strong>Amount:</strong> <span id="refAmount"></span></div>
+      <div><strong>Subject:</strong> <span id="refSubject"></span></div>
+    </div>
+
+    <form id="form2" novalidate autocomplete="off">
+      <p class="section-label">Amounts (S$) – leave blank if not applicable</p>
+      <div class="money-grid">
+        <div class="field" data-key="disInc"><label for="disInc">Dis/Inc</label><input type="text" id="disInc" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
+        <div class="field" data-key="share"><label for="share">Share (%)</label><input type="text" id="share" inputmode="decimal" placeholder="0" maxlength="13"></div>
+        <div class="field" data-key="salary"><label for="salary">Salary</label><input type="text" id="salary" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
+        <div class="field" data-key="govin"><label for="govin">Govin</label><input type="text" id="govin" inputmode="decimal" placeholder="Auto" maxlength="13"></div>
+        <div class="field" data-key="raj"><label for="raj">Raj</label><input type="text" id="raj" inputmode="decimal" placeholder="Auto" maxlength="13"></div>
+        <div class="field hl" data-key="rent"><label for="rent">Rent</label><input type="text" id="rent" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
+        <div class="field hl" data-key="telIt"><label for="telIt">Tel/IT</label><input type="text" id="telIt" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
+      </div>
+
+      <div class="calc">
+        <div id="nettHint"></div>
+        <div id="splitHint"></div>
+      </div>
+      <div class="hint">Leave Govin / Raj blank for the automatic split. If you type one of them, the other gets the rest of the Amount. Saving updates this receipt's row in the records sheet; the receipt itself is unchanged.</div>
+
+      <div class="actions wrap">
+        <button type="button" class="btn ghost" id="back2">Back to Receipt</button>
+        <button type="button" class="btn ghost" id="cancel2">Clear</button>
+        <button type="submit" class="btn" id="saveAccounts">Save Accounts</button>
+        <button type="button" class="btn ghost" id="newEntry">New Receipt</button>
+      </div>
+      <p class="msg" id="msg2" role="status"></p>
+    </form>
   </section>
 
 </main>
@@ -373,6 +390,7 @@
   const pad = n => String(n).padStart(2, '0');
   const MONEY_KEYS = ['disInc', 'share', 'salary', 'govin', 'raj', 'rent', 'telIt'];
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const LEAD_PCT = 70;                     // same split rule as the server
   // Today as YYYY-MM-DD for the date input (local clock, same as the Bill No)
   const isoToday = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
   // "2026-11-02" -> "02 Nov 2026" : the exact format server.js tallyDate() parses
@@ -380,8 +398,11 @@
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
     return m ? `${m[3]} ${MONTHS[Number(m[2]) - 1]} ${m[1]}` : '';
   }
-  let caseData = null;
-  let accounts = null;
+  const money2 = cents => (cents / 100).toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  let caseData = null;        // page 1
+  let savedReceipt = null;    // the receipt already written to the sheet (and Tally)
+  let accountsSaved = false;
 
   /* ---------- Page switching ---------- */
   function show(id) {
@@ -400,7 +421,7 @@
     return cents <= 99999999999 ? cents : null;
   }
 
-  /* ---------- Page 1 ---------- */
+  /* ---------- Page 1 : Case Entry ---------- */
   function buildBillNo() {
     const sel = document.querySelector('input[name="lawyer"]:checked');
     const n = sel ? sel.dataset.n : '1';
@@ -432,43 +453,6 @@
     setMsg('msg1');
     $('refBill').textContent = caseData.slNo;
     $('refSubject').textContent = caseData.caseCategory || '—';
-    const govinLead = /\/G\s*$/i.test(sl) || (!/\/D\s*$/i.test(sl) && caseData.lawyer === 'Govinda Raju');
-    $('govin').placeholder = govinLead ? 'Auto 70%' : 'Auto 30%';
-    $('raj').placeholder = govinLead ? 'Auto 30%' : 'Auto 70%';
-    $('splitHint').textContent = govinLead
-      ? 'Automatic split for /G: Govin 70% · Raj 30% of the Amount.'
-      : 'Automatic split for /D: Raj 70% · Govin 30% of the Amount.';
-    show('page2');
-  });
-
-  /* ---------- Page 2 ---------- */
-  function resetForm2() {
-    $('form2').reset();
-    setMsg('msg2');
-    document.querySelectorAll('#page2 .invalid').forEach(e => e.classList.remove('invalid'));
-  }
-  $('cancel2').addEventListener('click', resetForm2);
-  $('back2').addEventListener('click', () => show('page1'));
-
-  $('form2').addEventListener('submit', e => {
-    e.preventDefault();
-    const values = {};
-    let bad = false;
-    MONEY_KEYS.forEach(k => {
-      const raw = $(k).value.trim();
-      const cents = parseMoney(raw, true);
-      const field = document.querySelector(`#page2 .field[data-key="${k}"]`);
-      field.classList.toggle('invalid', cents === null);
-      if (cents === null) bad = true;
-      values[k] = raw && cents !== null ? (cents / 100).toFixed(2) : '';
-    });
-    if (values.share !== '' && Number(values.share) > 100) {
-      document.querySelector('#page2 .field[data-key="share"]').classList.add('invalid');
-      setMsg('msg2', 'Share (%) must be between 0 and 100.', 'error'); return;
-    }
-    if (bad) { setMsg('msg2', 'Please enter valid amounts, e.g. 120.50', 'error'); return; }
-    accounts = { ...values };
-    setMsg('msg2');
     startReceipt();
     show('page3');
   });
@@ -516,7 +500,7 @@
   }
   $('amount').addEventListener('input', updateWords);
 
-  /* ---------- Page 3 ---------- */
+  /* ---------- Page 2 of the flow : Receipt ---------- */
   function syncReceiptDate() {
     $('receiptDate').textContent = formatReceiptDate($('receiptDateInput').value);
   }
@@ -537,7 +521,8 @@
       if (isOther) $('modeOther').focus(); else $('modeOther').value = '';
     }));
 
-  $('back3').addEventListener('click', () => show('page2'));
+  $('back3').addEventListener('click', () => show('page1'));
+  $('nextAccounts').addEventListener('click', () => { startAccounts(); show('page2'); });
 
   $('form3').addEventListener('submit', async e => {
     e.preventDefault();
@@ -568,13 +553,15 @@
     btn.disabled = true; btn.textContent = 'Saving…';
     setMsg('msg3');
     try {
+      // The accounts columns are filled in on the next page, after the client has left.
       const res = await fetch('/api/records', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ case: caseData, accounts, receipt })
+        body: JSON.stringify({ case: caseData, accounts: {}, receipt })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || 'Save failed. Please try again.');
+      savedReceipt = receipt;
       freeze(receipt);
       showTally(data.tally);
     } catch (err) {
@@ -600,9 +587,9 @@
   function showTally(t) {
     const status = t && t.status;
     $('tallyRetry').hidden = status !== 'failed';
-    if (status === 'posted') setMsg('msg3', 'Saved to records and added to Tally.', 'ok');
+    if (status === 'posted') setMsg('msg3', 'Saved to records and added to Tally. Print the receipt, then press Next: Accounts.', 'ok');
     else if (status === 'failed') setMsg('msg3', `Saved to records. NOT yet in Tally: ${t.error || 'unknown error'}. The receipt can be printed; press Retry Tally later.`, 'error');
-    else setMsg('msg3', 'Saved to records.', 'ok');
+    else setMsg('msg3', 'Saved to records. Print the receipt, then press Next: Accounts.', 'ok');
   }
 
   $('tallyRetry').addEventListener('click', async () => {
@@ -629,7 +616,117 @@
   fetch('/api/config').then(r => r.json()).then(c => { if (c && c.sheetUrl) sheetUrl = c.sheetUrl; }).catch(() => {});
   $('excelBtn').addEventListener('click', () => window.open(sheetUrl, '_blank', 'noopener'));
 
+  /* ---------- Page 3 of the flow : Accounts (office use) ---------- */
+  function amountCents() {
+    return savedReceipt ? Math.round(Number(savedReceipt.amount) * 100) : 0;
+  }
+
+  function startAccounts() {
+    accountsSaved = false;
+    $('refAmount').textContent = savedReceipt ? 'S$ ' + money2(amountCents()) : '—';
+    setMsg('msg2');
+    updatePreview();
+  }
+
+  // Mirrors the server: /G -> Govin 70% · Raj 30%; /D -> Raj 70% · Govin 30%.
+  function autoSplit() {
+    const bill = caseData ? caseData.slNo : '';
+    const lawyer = caseData ? caseData.lawyer : '';
+    const govinLead = /\/G\s*$/i.test(bill) || (!/\/D\s*$/i.test(bill) && lawyer === 'Govinda Raju');
+    const total = amountCents();
+    const lead = Math.round(total * LEAD_PCT / 100);
+    return {
+      govinLead,
+      govin: govinLead ? lead : total - lead,
+      raj: govinLead ? total - lead : lead
+    };
+  }
+
+  function updatePreview() {
+    const total = amountCents();
+    const d = parseMoney($('disInc').value.trim(), true);
+    $('nettHint').innerHTML = d === null
+      ? '<strong>Nett:</strong> Dis/Inc is not a valid amount.'
+      : `<strong>Nett:</strong> S$ ${money2(total)} − S$ ${money2(d)} = <strong>S$ ${money2(total - d)}</strong>`;
+
+    const gRaw = $('govin').value.trim(), rRaw = $('raj').value.trim();
+    const g = gRaw ? parseMoney(gRaw, false) : null;
+    const r = rRaw ? parseMoney(rRaw, false) : null;
+    const s = autoSplit();
+    let txt;
+    if (!gRaw && !rRaw) {
+      txt = `<strong>Split (${s.govinLead ? '/G' : '/D'}, automatic):</strong> Govin S$ ${money2(s.govin)} · Raj S$ ${money2(s.raj)}`;
+    } else if (gRaw && !rRaw) {
+      txt = g === null ? '<strong>Split:</strong> Govin is not a valid amount.'
+        : `<strong>Split:</strong> Govin S$ ${money2(g)} · Raj gets the rest, S$ ${money2(Math.max(0, total - g))}`;
+    } else if (!gRaw && rRaw) {
+      txt = r === null ? '<strong>Split:</strong> Raj is not a valid amount.'
+        : `<strong>Split:</strong> Raj S$ ${money2(r)} · Govin gets the rest, S$ ${money2(Math.max(0, total - r))}`;
+    } else {
+      txt = '<strong>Split:</strong> both typed – kept exactly as entered.';
+    }
+    $('splitHint').innerHTML = txt;
+  }
+  ['disInc', 'govin', 'raj'].forEach(id => $(id).addEventListener('input', () => { accountsSaved = false; updatePreview(); }));
+  MONEY_KEYS.forEach(k => $(k).addEventListener('input', () => { accountsSaved = false; }));
+
+  function accountsTyped() {
+    return MONEY_KEYS.some(k => $(k).value.trim() !== '');
+  }
+
+  function resetForm2() {
+    $('form2').reset();
+    accountsSaved = false;
+    setMsg('msg2');
+    document.querySelectorAll('#page2 .invalid').forEach(e => e.classList.remove('invalid'));
+    updatePreview();
+  }
+  $('cancel2').addEventListener('click', resetForm2);
+  $('back2').addEventListener('click', () => show('page3'));
+
+  $('form2').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!savedReceipt || !caseData) { setMsg('msg2', 'No saved receipt – start again from Case Entry.', 'error'); return; }
+    const values = {};
+    let bad = false;
+    MONEY_KEYS.forEach(k => {
+      const raw = $(k).value.trim();
+      const cents = parseMoney(raw, true);
+      const field = document.querySelector(`#page2 .field[data-key="${k}"]`);
+      field.classList.toggle('invalid', cents === null);
+      if (cents === null) bad = true;
+      values[k] = raw && cents !== null ? (cents / 100).toFixed(2) : '';
+    });
+    if (bad) { setMsg('msg2', 'Please enter valid amounts, e.g. 120.50', 'error'); return; }
+    if (values.share !== '' && Number(values.share) > 100) {
+      document.querySelector('#page2 .field[data-key="share"]').classList.add('invalid');
+      setMsg('msg2', 'Share (%) must be between 0 and 100.', 'error'); return;
+    }
+
+    const btn = $('saveAccounts');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    setMsg('msg2');
+    try {
+      const res = await fetch('/api/records/accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ billNo: caseData.slNo, accounts: values })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Save failed. Please try again.');
+      accountsSaved = true;
+      setMsg('msg2', `Accounts saved to the records sheet for ${caseData.slNo}.`, 'ok');
+    } catch (err) {
+      setMsg('msg2', err.message, 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Save Accounts';
+    }
+  });
+
+  /* ---------- New receipt (last page) ---------- */
   $('newEntry').addEventListener('click', () => {
+    if (accountsTyped() && !accountsSaved &&
+        !confirm('The accounts on this page have not been saved. Start a new receipt anyway?')) return;
     $('page3').classList.remove('frozen');
     $('form3').reset();
     $('receiptDateInput').value = '';      // next receipt defaults to today again
@@ -638,13 +735,14 @@
     $('tallyRetry').hidden = true;
     updateWords();
     setMsg('msg3');
-    caseData = null; accounts = null;
+    caseData = null; savedReceipt = null;
     resetForm2();
     resetForm1();
     show('page1');
   });
 
   resetForm1();
+  updatePreview();
 })();
 </script>
 </body>
