@@ -18,6 +18,7 @@
   }
   @page { size: A4; margin: 0; }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html { -webkit-text-size-adjust: 100%; }
   body {
     margin: 0;
@@ -150,6 +151,7 @@
     background: var(--navy); color: #fff; padding: 0 8px;
   }
   .btn.ghost { background: #fff; color: var(--navy); }
+  .btn.warn { background: #fff; color: var(--danger); border-color: var(--danger); }
   .btn:disabled { opacity: .6; cursor: wait; }
   .msg { margin-top: 12px; font-size: 14px; text-align: center; min-height: 1em; }
   .msg.error { color: var(--danger); }
@@ -167,7 +169,8 @@
   .frozen .field .stack { flex: 1; min-width: 0; }
   .frozen .words-val { display: block; font-size: 13px; font-style: italic; color: #333; margin-top: 4px; }
   .words-val { display: none; }
-  .print-actions { display: none; }
+  .print-actions { display: none; flex-wrap: wrap; }
+  .print-actions .btn { flex: 1 1 110px; }
   .frozen .print-actions { display: flex; }
 
   /* ---------- Mobile portrait ---------- */
@@ -339,6 +342,7 @@
         <div class="actions print-actions">
           <button type="button" class="btn ghost" id="newEntry">New Entry</button>
           <button type="button" class="btn ghost" id="excelBtn">EXCEL</button>
+          <button type="button" class="btn warn" id="tallyRetry" hidden>Retry Tally</button>
           <button type="button" class="btn" onclick="window.print()">Print</button>
         </div>
         <p class="msg" id="msg3" role="status"></p>
@@ -540,6 +544,7 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || 'Save failed. Please try again.');
       freeze(receipt);
+      showTally(data.tally);
     } catch (err) {
       setMsg('msg3', err.message, 'error');
     } finally {
@@ -556,9 +561,36 @@
     $('amountWordsFinal').textContent = `(${r.amountWords})`;
     document.querySelectorAll('#page3 .invalid').forEach(e => e.classList.remove('invalid'));
     $('page3').classList.add('frozen');
-    setMsg('msg3', 'Saved to records.', 'ok');
     window.scrollTo(0, 0);
   }
+
+  /* ---------- Tally status (the sheet row is already saved at this point) ---------- */
+  function showTally(t) {
+    const status = t && t.status;
+    $('tallyRetry').hidden = status !== 'failed';
+    if (status === 'posted') setMsg('msg3', 'Saved to records and added to Tally.', 'ok');
+    else if (status === 'failed') setMsg('msg3', `Saved to records. NOT yet in Tally: ${t.error || 'unknown error'}. The receipt can be printed; press Retry Tally later.`, 'error');
+    else setMsg('msg3', 'Saved to records.', 'ok');
+  }
+
+  $('tallyRetry').addEventListener('click', async () => {
+    const btn = $('tallyRetry');
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      const res = await fetch('/api/tally/retry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ billNo: caseData.slNo })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Retry failed.');
+      showTally((data.results && data.results[0]) || { status: 'failed', error: 'Receipt not found in the records sheet' });
+    } catch (err) {
+      showTally({ status: 'failed', error: err.message });
+    } finally {
+      btn.disabled = false; btn.textContent = 'Retry Tally';
+    }
+  });
 
   /* ---------- EXCEL: open the records sheet ---------- */
   let sheetUrl = 'https://docs.google.com/spreadsheets/d/1t3Ty5NRJ4X1SWkfJZ7wYdG6UdbIXB94ORPTtuFBZK4Y/edit?gid=0#gid=0';
@@ -569,6 +601,7 @@
     $('page3').classList.remove('frozen');
     $('form3').reset();
     $('othersWrap').classList.remove('show');
+    $('tallyRetry').hidden = true;
     updateWords();
     setMsg('msg3');
     caseData = null; accounts = null;
