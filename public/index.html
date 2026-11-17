@@ -134,6 +134,17 @@
     font-size: 15px; margin-bottom: 18px;
   }
   .meta strong { color: var(--navy); }
+  .meta input[type="date"] {
+    font: inherit; font-size: 15px; padding: 4px 8px; margin-left: 4px;
+    border: 1px solid var(--line); border-radius: 6px; background: #fff;
+    color: var(--ink); outline: none;
+  }
+  .meta input[type="date"]:focus {
+    border-color: var(--navy); box-shadow: 0 0 0 3px rgba(31,58,95,.14);
+  }
+  .meta input[type="date"].invalid { border-color: var(--danger); }
+  .date-val { display: none; }
+  .frozen .date-val { display: inline; }
 
   .sign-row { display: flex; justify-content: flex-end; margin-top: 8px; }
   .sign-block { text-align: center; font-weight: 600; font-size: 14px; width: min(70mm, 100%); }
@@ -281,7 +292,11 @@
       <hr class="rule">
 
       <div class="meta">
-        <div><strong>Date:</strong> <span id="receiptDate"></span></div>
+        <div>
+          <strong>Date:</strong>
+          <input type="date" id="receiptDateInput" class="edit-only" aria-label="Receipt date">
+          <span class="date-val" id="receiptDate"></span>
+        </div>
         <div><strong>Bill No:</strong> <span id="billNo"></span></div>
       </div>
 
@@ -357,6 +372,14 @@
   const $ = id => document.getElementById(id);
   const pad = n => String(n).padStart(2, '0');
   const MONEY_KEYS = ['disInc', 'share', 'salary', 'govin', 'raj', 'rent', 'telIt'];
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  // Today as YYYY-MM-DD for the date input (local clock, same as the Bill No)
+  const isoToday = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+  // "2026-11-02" -> "02 Nov 2026" : the exact format server.js tallyDate() parses
+  function formatReceiptDate(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    return m ? `${m[3]} ${MONTHS[Number(m[2]) - 1]} ${m[1]}` : '';
+  }
   let caseData = null;
   let accounts = null;
 
@@ -494,9 +517,16 @@
   $('amount').addEventListener('input', updateWords);
 
   /* ---------- Page 3 ---------- */
+  function syncReceiptDate() {
+    $('receiptDate').textContent = formatReceiptDate($('receiptDateInput').value);
+  }
+  $('receiptDateInput').addEventListener('input', syncReceiptDate);
+  $('receiptDateInput').addEventListener('change', syncReceiptDate);
+
   function startReceipt() {
-    const d = new Date();
-    $('receiptDate').textContent = d.toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric' });
+    // Defaults to today; an edited date survives Back/Next within the same receipt.
+    if (!$('receiptDateInput').value) $('receiptDateInput').value = isoToday();
+    syncReceiptDate();
     $('billNo').textContent = caseData.slNo;   // Bill No is set on page 1 only
   }
 
@@ -513,6 +543,8 @@
     e.preventDefault();
     const cents = updateWords();
     const mode = document.querySelector('input[name="mode"]:checked').value;
+    const dateText = formatReceiptDate($('receiptDateInput').value);
+    $('receiptDateInput').classList.toggle('invalid', !dateText);
     const checks = [
       ['f-from', !!$('receivedFrom').value.trim()],
       ['f-amount', cents !== null],
@@ -520,10 +552,10 @@
       ['f-mode', mode !== 'Others' || !!$('modeOther').value.trim()]
     ];
     checks.forEach(([id, ok]) => $(id).classList.toggle('invalid', !ok));
-    if (checks.some(([, ok]) => !ok)) { setMsg('msg3', 'Please complete the highlighted fields.', 'error'); return; }
+    if (!dateText || checks.some(([, ok]) => !ok)) { setMsg('msg3', 'Please complete the highlighted fields.', 'error'); return; }
 
     const receipt = {
-      date: $('receiptDate').textContent,
+      date: dateText,
       receivedFrom: $('receivedFrom').value.trim(),
       amount: (cents / 100).toFixed(2),
       amountWords: amountInWords(cents),
@@ -600,6 +632,8 @@
   $('newEntry').addEventListener('click', () => {
     $('page3').classList.remove('frozen');
     $('form3').reset();
+    $('receiptDateInput').value = '';      // next receipt defaults to today again
+    $('receiptDate').textContent = '';
     $('othersWrap').classList.remove('show');
     $('tallyRetry').hidden = true;
     updateWords();
