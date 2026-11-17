@@ -13,6 +13,11 @@ const DRY_RUN = !process.env.GOOGLE_CREDENTIALS_JSON || !SHEET_ID;
 // Columns 18–20 are extra details collected by the app.
 // Column 21 (U) is the Tally sync status, written by the app after each save.
 // MATTER = "Payment For" from the receipt (one input, used on the receipt and in the ledger).
+//
+// The row is written in two passes, matching the order of the pages:
+//   1. POST /api/records          – the printed receipt (and the Tally voucher). The accounts
+//                                   columns are left at their automatic values.
+//   2. POST /api/records/accounts – the office accounts columns H–Q, filled in afterwards.
 const HEADERS = [
   'DATE', 'CLIENT', 'SUBJECT', 'O/R DAT', 'O/R', 'MATTER', 'AMOUNT', 'DIS/INC', 'NETT',
   'SHARE(%)', 'SALARY', 'GOVIN', 'RAJ', '', 'RENT', '', 'TEL/IT',
@@ -22,8 +27,9 @@ const HEADER_WIDTH = 22;                       // A..V – wider than HEADERS so
 const HEADER_RANGE = 'A1:V1';
 const HIGHLIGHT_COLS = [14, 16];               // RENT, TEL/IT (0-based) – yellow like the ledger
 const MONEY_KEYS = ['disInc', 'share', 'salary', 'govin', 'raj', 'rent', 'telIt'];
-const COL = { date: 0, client: 1, billNo: 4, matter: 5, amount: 6, mode: 18, tally: 20 };
+const COL = { date: 0, client: 1, billNo: 4, matter: 5, amount: 6, lawyer: 17, mode: 18, tally: 20 };
 const TALLY_COL_LETTER = 'U';
+const ACCOUNTS_RANGE = (rowNum) => `H${rowNum}:Q${rowNum}`;   // DIS/INC … TEL/IT
 
 const LAWYERS = ['Dora Raj', 'Govinda Raju'];
 const LEAD_PCT = 70;                           // lead lawyer's share of AMOUNT; the other gets the rest
@@ -156,6 +162,15 @@ async function setTallyCell(rowNum, text) {
   }
 }
 
+// Reads the data rows (A2:U) once, newest last.
+async function readRows() {
+  const got = await getSheets().spreadsheets.values.get({
+    spreadsheetId: SHEET_ID, range: `'${SHEET_TAB}'!A2:${TALLY_COL_LETTER}`,
+    valueRenderOption: 'UNFORMATTED_VALUE'
+  });
+  return got.data.values || [];
+}
+
 /* ---------- Helpers ---------- */
 const clean = (v, max = 300) => String(v ?? '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max);
 
@@ -166,6 +181,26 @@ function money(v) {
   if (!/^\d+(\.\d{1,2})?$/.test(s)) return NaN;
   const n = Math.round(parseFloat(s) * 100) / 100;
   return n <= 999999999.99 ? n : NaN;
+}
+
+// Default GOVIN / RAJ split (only where left blank):
+//   /G (Govinda Raju) -> GOVIN 70%, RAJ 30%   |   /D (Dora Raj) -> RAJ 70%, GOVIN 30%
+// Worked in cents so the two parts always add up exactly to AMOUNT.
+function splitAmount(amount, billNo, lawyer, m) {
+  const govinLead = /\/G\s*$/i.test(billNo) || (!/\/D\s*$/i.test(billNo) && lawyer === 'Govinda Raju');
+  const amountCents = Math.round(amount * 100);
+  const leadCents = Math.round(amountCents * LEAD_PCT / 100);
+  const cents = v => Math.round(v * 100);
+  let govin = m.govin, raj = m.raj;
+  if (govin === '' && raj === '') {              // both blank -> 70/30 split
+    govin = (govinLead ? leadCents : amountCents - leadCents) / 100;
+    raj = (govinLead ? amountCents - leadCents : leadCents) / 100;
+  } else if (govin === '') {                     // only Raj typed -> Govin gets the rest
+    govin = Math.max(0, amountCents - cents(raj)) / 100;
+  } else if (raj === '') {                       // only Govin typed -> Raj gets the rest
+    raj = Math.max(0, amountCents - cents(govin)) / 100;
+  }                                              // both typed -> keep as entered
+  return { govin, raj };
 }
 
 function sgtNow() {
@@ -341,6 +376,9 @@ app.get('/healthz', async (_req, res) => {
   }
 });
 
+// Step 1 of the save: the receipt the client is given, plus the Tally voucher.
+// The accounts fields are optional here – they are normally sent empty and filled in
+// afterwards by /api/records/accounts, so a printed receipt is never waiting on office data.
 app.post('/api/records', async (req, res) => {
   const { case: c = {}, accounts: a = {}, receipt: r = {} } = req.body || {};
 
@@ -361,25 +399,9 @@ app.post('/api/records', async (req, res) => {
   if (typeof m.share === 'number' && m.share > 100) errors.push('Share (%) must be 0–100');
   if (errors.length) return res.status(400).json({ ok: false, error: `Please check: ${errors.join(', ')}` });
 
-  const nett = Math.round((amount - (m.disInc || 0)) * 100) / 100;
-
-  // Default GOVIN / RAJ split (only where left blank):
-  //   /G (Govinda Raju) -> GOVIN 70%, RAJ 30%   |   /D (Dora Raj) -> RAJ 70%, GOVIN 30%
-  // Worked in cents so the two parts always add up exactly to AMOUNT.
   const billNo = clean(c.slNo, 40);
-  const govinLead = /\/G\s*$/i.test(billNo) || (!/\/D\s*$/i.test(billNo) && lawyer === 'Govinda Raju');
-  const amountCents = Math.round(amount * 100);
-  const leadCents = Math.round(amountCents * LEAD_PCT / 100);
-  const autoGovin = (govinLead ? leadCents : amountCents - leadCents) / 100;
-  const autoRaj = (govinLead ? amountCents - leadCents : leadCents) / 100;
-  const cents = v => Math.round(v * 100);
-  if (m.govin === '' && m.raj === '') {          // both blank -> 70/30 split
-    m.govin = autoGovin; m.raj = autoRaj;
-  } else if (m.govin === '') {                   // only Raj typed -> Govin gets the rest
-    m.govin = Math.max(0, amountCents - cents(m.raj)) / 100;
-  } else if (m.raj === '') {                     // only Govin typed -> Raj gets the rest
-    m.raj = Math.max(0, amountCents - cents(m.govin)) / 100;
-  }                                              // both typed -> keep as entered
+  const nett = Math.round((amount - (m.disInc || 0)) * 100) / 100;
+  const split = splitAmount(amount, billNo, lawyer, m);
   const receiptDate = clean(r.date, 30);
   const client = clean(r.receivedFrom);
   const matter = clean(r.paymentFor, 500);
@@ -397,8 +419,8 @@ app.post('/api/records', async (req, res) => {
     nett,                              // NETT
     m.share,                           // SHARE(%)
     m.salary,                          // SALARY
-    m.govin,                           // GOVIN
-    m.raj,                             // RAJ
+    split.govin,                       // GOVIN
+    split.raj,                         // RAJ
     '',                                // (spacer)
     m.rent,                            // RENT
     '',                                // (spacer)
@@ -424,6 +446,73 @@ app.post('/api/records', async (req, res) => {
   res.json({ ok: true, tally });
 });
 
+// Step 2 of the save: the office accounts columns, typed after the receipt has been printed.
+// Updates columns H–Q of the row that already holds this Bill No. NETT and the GOVIN / RAJ
+// split are recalculated from the AMOUNT already in the sheet, so the receipt is never touched
+// and nothing is re-sent to Tally (the voucher is for AMOUNT, which does not change here).
+app.post('/api/records/accounts', async (req, res) => {
+  const body = req.body || {};
+  const billNo = clean(body.billNo, 40);
+  const a = body.accounts || {};
+  const m = Object.fromEntries(MONEY_KEYS.map(k => [k, money(a[k])]));
+  const errors = [];
+
+  if (!billNo) errors.push('Bill No');
+  MONEY_KEYS.forEach(k => { if (Number.isNaN(m[k])) errors.push(k); });
+  if (typeof m.share === 'number' && m.share > 100) errors.push('Share (%) must be 0–100');
+  if (errors.length) return res.status(400).json({ ok: false, error: `Please check: ${errors.join(', ')}` });
+
+  if (DRY_RUN) {
+    console.log('[DRY RUN] Accounts not sent to Google Sheets:', billNo, m);
+    return res.json({ ok: true, dryRun: true });
+  }
+
+  try {
+    await ensureHeader();
+    const rows = await readRows();
+    let idx = -1;
+    for (let i = rows.length - 1; i >= 0; i--) {          // newest row with this Bill No wins
+      if (clean((rows[i] || [])[COL.billNo], 40) === billNo) { idx = i; break; }
+    }
+    if (idx < 0) {
+      return res.status(404).json({ ok: false, error: `Bill No ${billNo} is not in the records sheet. Submit the receipt first.` });
+    }
+
+    const rowNum = idx + 2;
+    const found = rows[idx] || [];
+    const amount = Number(found[COL.amount]);
+    if (!(amount > 0)) {
+      return res.status(409).json({ ok: false, error: 'The saved row has no amount, so NETT and the split cannot be worked out.' });
+    }
+    const nett = Math.round((amount - (m.disInc || 0)) * 100) / 100;
+    const split = splitAmount(amount, billNo, clean(found[COL.lawyer], 50), m);
+
+    await getSheets().spreadsheets.values.update({
+      spreadsheetId: SHEET_ID,
+      range: `'${SHEET_TAB}'!${ACCOUNTS_RANGE(rowNum)}`,
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [[
+          m.disInc,        // H  DIS/INC
+          nett,            // I  NETT
+          m.share,         // J  SHARE(%)
+          m.salary,        // K  SALARY
+          split.govin,     // L  GOVIN
+          split.raj,       // M  RAJ
+          '',              // N  (spacer)
+          m.rent,          // O  RENT
+          '',              // P  (spacer)
+          m.telIt          // Q  TEL/IT
+        ]]
+      }
+    });
+    res.json({ ok: true, row: rowNum, amount, nett, govin: split.govin, raj: split.raj });
+  } catch (err) {
+    console.error('Accounts update failed:', err.message);
+    res.status(502).json({ ok: false, error: 'Could not update the Google Sheet. Please try again.' });
+  }
+});
+
 // Re-send receipts whose TALLY column is PENDING or FAILED (e.g. the office PC was off).
 // Body { billNo } limits it to one receipt; without it, up to 50 waiting rows are sent.
 app.post('/api/tally/retry', async (req, res) => {
@@ -432,11 +521,7 @@ app.post('/api/tally/retry', async (req, res) => {
   const only = clean((req.body || {}).billNo, 40);
   try {
     await ensureHeader();
-    const got = await getSheets().spreadsheets.values.get({
-      spreadsheetId: SHEET_ID, range: `'${SHEET_TAB}'!A2:${TALLY_COL_LETTER}`,
-      valueRenderOption: 'UNFORMATTED_VALUE'
-    });
-    const rows = got.data.values || [];
+    const rows = await readRows();
     const results = [];
     for (let i = 0; i < rows.length && results.length < 50; i++) {
       const v = rows[i];
@@ -472,4 +557,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { app, buildVoucherXml, tallyDate };
+module.exports = { app, buildVoucherXml, tallyDate, splitAmount };
