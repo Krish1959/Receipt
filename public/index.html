@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#1f3a5f">
-<title>Raj Govin Law Practice</title>
+<title>Raj Govin Law Practice – Digital Records</title>
 <style>
   :root {
     --navy: #1f3a5f;
@@ -12,13 +12,10 @@
     --ink: #1d232b;
     --muted: #6b7380;
     --line: #c9d1dc;
-    --danger: #b3261e;
     --bg: #e9edf2;
     --radius: 8px;
   }
-  @page { size: A4; margin: 0; }
   * { box-sizing: border-box; }
-  [hidden] { display: none !important; }
   html { -webkit-text-size-adjust: 100%; }
   body {
     margin: 0;
@@ -28,8 +25,6 @@
     font-size: 16px;
     line-height: 1.4;
   }
-
-  /* ---------- Sheet ---------- */
   .sheet {
     width: min(210mm, 100% - 24px);
     margin: 16px auto;
@@ -38,9 +33,6 @@
     box-shadow: 0 2px 14px rgba(0,0,0,.12);
     padding: clamp(18px, 5vw, 18mm) clamp(16px, 5vw, 20mm);
   }
-  .view { display: none; }
-  .view.active { display: block; }
-
   h1.title {
     margin: 0;
     text-align: center;
@@ -64,685 +56,91 @@
     margin: 10px 0 0;
     padding-left: .4em;
   }
-  .form-title {
-    text-align: center; color: var(--navy); font-size: clamp(18px, 5vw, 22px);
-    font-weight: 700; margin: 0;
-  }
-  .form-sub { text-align: center; color: var(--muted); font-size: 13px; margin: 4px 0 0; }
   hr.rule { border: 0; border-top: 2px solid var(--navy); margin: 16px 0 18px; }
 
-  .ref {
-    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 16px;
-    background: var(--navy-soft); border-radius: 6px; padding: 10px 12px;
-    font-size: 14px; margin-bottom: 18px;
-  }
-  .ref strong { color: var(--navy); }
-
-  /* ---------- Fields ---------- */
-  .field { margin-bottom: 16px; }
-  .field > label, .field > .label {
-    display: block; font-weight: 600; font-size: 15px; margin-bottom: 6px;
-  }
-  .field input[type="text"], .field textarea {
-    width: 100%;
-    font: inherit;
-    font-size: 16px;               /* prevents iOS zoom on focus */
-    color: var(--ink);
-    padding: 11px 12px;
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    background: #fff;
-    outline: none;
-    transition: border-color .15s, box-shadow .15s;
-  }
-  .field textarea { resize: vertical; min-height: 84px; }
-  .field input::placeholder, .field textarea::placeholder { color: #a0a7b2; }
-  .field input:focus, .field textarea:focus {
-    border-color: var(--navy); box-shadow: 0 0 0 3px rgba(31,58,95,.14);
-  }
-  .field.invalid input, .field.invalid .choices { border-color: var(--danger); }
-  .hint { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
-  #amountWords { font-style: italic; color: var(--navy); }
-  #amountWords.empty { color: var(--muted); }
-
-  /* Money grid on the Accounts page */
-  .money-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0 12px; }
-  .money-grid .field input { text-align: right; }
-  .money-grid .field.hl > label::after {
-    content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
-    background: #f2c200; margin-left: 6px; vertical-align: middle;
-  }
   .section-label {
     font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
-    color: var(--muted); margin: 6px 0 10px;
+    color: var(--muted); margin: 0 0 12px;
   }
-  .calc {
-    background: var(--navy-soft); border-radius: 6px; padding: 10px 12px;
-    font-size: 13.5px; margin: 4px 0 14px;
-  }
-  .calc div + div { margin-top: 4px; }
-  .calc strong { color: var(--navy); }
 
-  .choices { display: flex; flex-wrap: wrap; gap: 10px; border: 1px solid transparent; border-radius: 6px; }
+  /* ---------- Choices ---------- */
+  .choices { display: flex; flex-direction: column; gap: 12px; }
   .choice {
-    display: flex; align-items: center; gap: 8px;
-    padding: 10px 14px; min-height: 44px;
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 16px; min-height: 56px;
     border: 1px solid var(--line); border-radius: 6px;
-    cursor: pointer; font-weight: 500; user-select: none; flex: 1 1 auto;
+    cursor: pointer; font-weight: 600; font-size: 17px; user-select: none;
   }
-  .choice input { accent-color: var(--navy); width: 18px; height: 18px; margin: 0; }
+  .choice input { accent-color: var(--navy); width: 20px; height: 20px; margin: 0; flex: 0 0 auto; }
   .choice:has(input:checked) { border-color: var(--navy); background: var(--navy-soft); }
-  #othersWrap { margin-top: 10px; display: none; }
-  #othersWrap.show { display: block; }
-
-  .meta {
-    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px;
-    font-size: 15px; margin-bottom: 18px;
-  }
-  .meta strong { color: var(--navy); }
-  .meta input[type="date"] {
-    font: inherit; font-size: 15px; padding: 4px 8px; margin-left: 4px;
-    border: 1px solid var(--line); border-radius: 6px; background: #fff;
-    color: var(--ink); outline: none;
-  }
-  .meta input[type="date"]:focus {
-    border-color: var(--navy); box-shadow: 0 0 0 3px rgba(31,58,95,.14);
-  }
-  .meta input[type="date"].invalid { border-color: var(--danger); }
-  .date-val { display: none; }
-  .frozen .date-val { display: inline; }
-
-  .sign-row { display: flex; justify-content: flex-end; margin-top: 8px; }
-  .sign-block { text-align: center; font-weight: 600; font-size: 14px; width: min(70mm, 100%); }
-  .sign-box { height: 28mm; border: 1.5px solid #333; border-radius: 4px; margin-top: 6px; }
-  .note {
-    margin: 18px 0 0; text-align: center; font-size: 13px; font-style: italic; color: #444;
-    border-top: 1px dashed #999; padding-top: 12px;
-  }
+  .choice .sub { display: block; font-weight: 400; font-size: 13px; color: var(--muted); margin-top: 2px; }
 
   /* ---------- Buttons ---------- */
-  .actions { display: flex; gap: 10px; margin-top: 22px; }
-  .actions.wrap { flex-wrap: wrap; }
-  .actions.wrap .btn { flex: 1 1 110px; }
+  .actions { display: flex; gap: 10px; margin-top: 24px; }
   .btn {
-    flex: 1; min-height: 48px; font: inherit; font-weight: 600; font-size: 16px;
+    flex: 1; min-height: 50px; font: inherit; font-weight: 600; font-size: 16px;
     border-radius: 6px; border: 1px solid var(--navy); cursor: pointer;
     background: var(--navy); color: #fff; padding: 0 8px;
   }
   .btn.ghost { background: #fff; color: var(--navy); }
-  .btn.warn { background: #fff; color: var(--danger); border-color: var(--danger); }
-  .btn:disabled { opacity: .6; cursor: wait; }
-  .msg { margin-top: 12px; font-size: 14px; text-align: center; min-height: 1em; }
-  .msg.error { color: var(--danger); }
-  .msg.ok { color: #1e7a3c; }
+  .foot { margin-top: 14px; text-align: center; font-size: 12.5px; color: var(--muted); }
 
-  /* ---------- Frozen receipt ---------- */
-  .val { display: none; }
-  .frozen .receipt-box { border: 2px solid var(--navy); border-radius: 6px; padding: clamp(14px, 4vw, 10mm) clamp(14px, 4vw, 12mm); }
-  .frozen .field input, .frozen .choices, .frozen #othersWrap, .frozen .hint-live, .frozen .edit-only { display: none !important; }
-  .frozen .val {
-    display: block; padding: 4px 2px 6px; border-bottom: 1px dotted #555; min-height: 1.6em; word-break: break-word;
-  }
-  .frozen .field { display: flex; gap: 12px; align-items: flex-end; margin-bottom: 14px; }
-  .frozen .field > label, .frozen .field > .label { flex: 0 0 40mm; margin: 0 0 6px; }
-  .frozen .field .stack { flex: 1; min-width: 0; }
-  .frozen .words-val { display: block; font-size: 13px; font-style: italic; color: #333; margin-top: 4px; }
-  .words-val { display: none; }
-  .print-actions { display: none; flex-wrap: wrap; }
-  .print-actions .btn { flex: 1 1 110px; }
-  .frozen .print-actions { display: flex; }
-
-  /* ---------- Mobile portrait ---------- */
   @media (max-width: 560px) {
     .sheet { width: 100%; margin: 0; border-radius: 0; box-shadow: none; min-height: 100vh; }
-    .actions { padding-bottom: env(safe-area-inset-bottom); margin-top: 18px; }
-    .frozen .field { display: block; }
-    .frozen .field > label, .frozen .field > .label { margin-bottom: 2px; }
-    .sign-row { justify-content: center; }
-    .meta { flex-direction: column; }
-  }
-
-  /* ---------- Print (A4) ---------- */
-  @media print {
-    html, body { background: #fff; height: auto !important; min-height: 0 !important; }
-    /* Height is never forced, so any printer margin can't push content onto a 2nd page */
-    .sheet {
-      width: auto; height: auto; min-height: 0 !important; margin: 0; border-radius: 0; box-shadow: none;
-      padding: 14mm 16mm 0;
-    }
-    /* Only the receipt ever prints – from whichever page is on screen */
-    #page1, #page2 { display: none !important; }
-    #page3 { display: block !important; }
-    .receipt-box { break-inside: avoid; page-break-inside: avoid; }
-    .actions, .msg, .no-print { display: none !important; }
-    .frozen .field { display: flex !important; }
-    .meta { flex-direction: row !important; }
-    .sign-row { justify-content: flex-end !important; }
+    .actions { flex-direction: column; padding-bottom: env(safe-area-inset-bottom); }
   }
 </style>
 </head>
 <body>
 
 <main class="sheet">
+  <h1 class="title">Raj Govin Law Practice</h1>
+  <p class="address">People's Park Centre, #05-48, Singapore 058357</p>
+  <p class="doc-label">DIGITAL RECORDS</p>
+  <hr class="rule">
 
-  <!-- ================= PAGE 1 : CASE ENTRY ================= -->
-  <section class="view active" id="page1" aria-labelledby="p1title">
-    <h2 class="form-title" id="p1title">Case Entry</h2>
-    <p class="form-sub">Step 1 of 3</p>
-    <hr class="rule">
+  <p class="section-label">What would you like to do?</p>
 
-    <form id="form1" novalidate autocomplete="off">
-      <div class="field" id="f-lawyer">
-        <span class="label">Lawyer's Name:</span>
-        <div class="choices" role="radiogroup">
-          <label class="choice"><input type="radio" name="lawyer" value="Dora Raj" data-n="1" data-s="D" checked>Dora Raj</label>
-          <label class="choice"><input type="radio" name="lawyer" value="Govinda Raju" data-n="2" data-s="G">Govinda Raju</label>
-        </div>
-      </div>
-
-      <div class="field" id="f-sl">
-        <label for="slNo">Bill No:</label>
-        <input type="text" id="slNo" maxlength="40">
-        <div class="hint">Auto-filled as n-YYYYMMDD-HHMM/x (1…/D = Dora Raj, 2…/G = Govinda Raju). Refreshes when the lawyer is changed. Editable.</div>
-      </div>
-
-      <div class="field">
-        <label for="caseCategory">Case Category:</label>
-        <input type="text" id="caseCategory" placeholder="e.g. Divorce / Theft" maxlength="300">
-      </div>
-
-      <div class="actions">
-        <button type="button" class="btn ghost" id="cancel1">Cancel</button>
-        <button type="submit" class="btn">Next</button>
-      </div>
-      <p class="msg" id="msg1" role="status"></p>
-    </form>
-  </section>
-
-  <!-- ================= PAGE 2 (2nd in the flow) : RECEIPT ================= -->
-  <section class="view" id="page3" aria-labelledby="p3title">
-    <p class="form-sub edit-only no-print">Step 2 of 3 · the client's receipt</p>
-    <div class="receipt-box">
-      <h1 class="title" id="p3title">Raj Govin Law Practice</h1>
-      <p class="address">People's Park Centre, #05-48, Singapore 058357</p>
-      <p class="doc-label">RECEIPT</p>
-      <hr class="rule">
-
-      <div class="meta">
-        <div>
-          <strong>Date:</strong>
-          <input type="date" id="receiptDateInput" class="edit-only" aria-label="Receipt date">
-          <span class="date-val" id="receiptDate"></span>
-        </div>
-        <div><strong>Bill No:</strong> <span id="billNo"></span></div>
-      </div>
-
-      <form id="form3" novalidate autocomplete="off">
-        <div class="field" id="f-from">
-          <label for="receivedFrom">Received from:</label>
-          <div class="stack">
-            <input type="text" id="receivedFrom" maxlength="300">
-            <span class="val" data-for="receivedFrom"></span>
-          </div>
-        </div>
-
-        <div class="field" id="f-amount">
-          <label for="amount">Amount (S$):</label>
-          <div class="stack">
-            <input type="text" id="amount" inputmode="decimal" placeholder="0.00" maxlength="13">
-            <div class="hint hint-live" id="amountWords">The amount in words will appear here automatically</div>
-            <span class="val" data-for="amount"></span>
-            <span class="words-val" id="amountWordsFinal"></span>
-          </div>
-        </div>
-
-        <div class="field" id="f-for">
-          <label for="paymentFor">Payment For:</label>
-          <div class="stack">
-            <input type="text" id="paymentFor" maxlength="500" placeholder="e.g. Legal fees – first consultation">
-            <div class="hint hint-live">Also saved as MATTER in the records.</div>
-            <span class="val" data-for="paymentFor"></span>
-          </div>
-        </div>
-
-        <div class="field" id="f-mode">
-          <span class="label">Mode of Payment:</span>
-          <div class="stack">
-            <div class="choices" role="radiogroup">
-              <label class="choice"><input type="radio" name="mode" value="PayNow" checked>PayNow</label>
-              <label class="choice"><input type="radio" name="mode" value="Cash">Cash</label>
-              <label class="choice"><input type="radio" name="mode" value="Others">Others</label>
-            </div>
-            <div id="othersWrap"><input type="text" id="modeOther" placeholder="Please specify" maxlength="100"></div>
-            <span class="val" data-for="mode"></span>
-          </div>
-        </div>
-
-        <div class="sign-row">
-          <div class="sign-block">
-            Signature:
-            <div class="sign-box"></div>
-          </div>
-        </div>
-
-        <p class="note">** This is a digital receipt - No signature required **</p>
-
-        <div class="actions edit-only">
-          <button type="button" class="btn ghost" id="back3">Back</button>
-          <button type="submit" class="btn" id="submit3">Submit</button>
-        </div>
-        <div class="actions print-actions">
-          <button type="button" class="btn ghost" id="nextAccounts">Next: Accounts</button>
-          <button type="button" class="btn ghost" id="excelBtn">EXCEL</button>
-          <button type="button" class="btn warn" id="tallyRetry" hidden>Retry Tally</button>
-          <button type="button" class="btn" onclick="window.print()">Print</button>
-        </div>
-        <p class="msg" id="msg3" role="status"></p>
-      </form>
-    </div>
-  </section>
-
-  <!-- ================= PAGE 3 (last in the flow) : ACCOUNTS ================= -->
-  <section class="view" id="page2" aria-labelledby="p2title">
-    <h2 class="form-title" id="p2title">Accounts</h2>
-    <p class="form-sub">Step 3 of 3 · office use – the receipt is already saved and printed</p>
-    <hr class="rule">
-
-    <div class="ref">
-      <div><strong>Bill No:</strong> <span id="refBill"></span></div>
-      <div><strong>Amount:</strong> <span id="refAmount"></span></div>
-      <div><strong>Subject:</strong> <span id="refSubject"></span></div>
+  <form id="chooser" autocomplete="off">
+    <div class="choices" role="radiogroup" aria-label="Choose a task">
+      <label class="choice">
+        <input type="radio" name="task" value="receipt.html" checked>
+        <span>Create a Receipt<span class="sub">Money received from a client</span></span>
+      </label>
+      <label class="choice">
+        <input type="radio" name="task" value="invoice.html">
+        <span>Create an Invoice<span class="sub">Bill a client for fees and disbursements</span></span>
+      </label>
+      <label class="choice">
+        <input type="radio" name="task" value="pettycash.html">
+        <span>Submit Petty-cash Claim<span class="sub">Office expenses paid out of pocket</span></span>
+      </label>
     </div>
 
-    <form id="form2" novalidate autocomplete="off">
-      <p class="section-label">Amounts (S$) – leave blank if not applicable</p>
-      <div class="money-grid">
-        <div class="field" data-key="disInc"><label for="disInc">Dis/Inc</label><input type="text" id="disInc" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
-        <div class="field" data-key="share"><label for="share">Share (%)</label><input type="text" id="share" inputmode="decimal" placeholder="0" maxlength="13"></div>
-        <div class="field" data-key="salary"><label for="salary">Salary</label><input type="text" id="salary" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
-        <div class="field" data-key="govin"><label for="govin">Govin</label><input type="text" id="govin" inputmode="decimal" placeholder="Auto" maxlength="13"></div>
-        <div class="field" data-key="raj"><label for="raj">Raj</label><input type="text" id="raj" inputmode="decimal" placeholder="Auto" maxlength="13"></div>
-        <div class="field hl" data-key="rent"><label for="rent">Rent</label><input type="text" id="rent" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
-        <div class="field hl" data-key="telIt"><label for="telIt">Tel/IT</label><input type="text" id="telIt" inputmode="decimal" placeholder="0.00" maxlength="13"></div>
-      </div>
+    <div class="actions">
+      <button type="button" class="btn ghost" id="sheetBtn">Open Google Sheet</button>
+      <button type="submit" class="btn">Continue</button>
+    </div>
+  </form>
 
-      <div class="calc">
-        <div id="nettHint"></div>
-        <div id="splitHint"></div>
-      </div>
-      <div class="hint">Leave Govin / Raj blank for the automatic split. If you type one of them, the other gets the rest of the Amount. Saving updates this receipt's row in the records sheet; the receipt itself is unchanged.</div>
-
-      <div class="actions wrap">
-        <button type="button" class="btn ghost" id="back2">Back to Receipt</button>
-        <button type="button" class="btn ghost" id="cancel2">Clear</button>
-        <button type="submit" class="btn" id="saveAccounts">Save Accounts</button>
-        <button type="button" class="btn ghost" id="newEntry">New Receipt</button>
-      </div>
-      <p class="msg" id="msg2" role="status"></p>
-    </form>
-  </section>
-
+  <p class="foot">All entries are saved to the practice's Google Drive.</p>
 </main>
 
 <script>
 (function () {
   const $ = id => document.getElementById(id);
-  const pad = n => String(n).padStart(2, '0');
-  const MONEY_KEYS = ['disInc', 'share', 'salary', 'govin', 'raj', 'rent', 'telIt'];
-  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const LEAD_PCT = 70;                     // same split rule as the server
-  // Today as YYYY-MM-DD for the date input (local clock, same as the Bill No)
-  const isoToday = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
-  // "2026-11-02" -> "02 Nov 2026" : the exact format server.js tallyDate() parses
-  function formatReceiptDate(iso) {
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
-    return m ? `${m[3]} ${MONTHS[Number(m[2]) - 1]} ${m[1]}` : '';
-  }
-  const money2 = cents => (cents / 100).toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  let caseData = null;        // page 1
-  let savedReceipt = null;    // the receipt already written to the sheet (and Tally)
-  let accountsSaved = false;
-
-  /* ---------- Page switching ---------- */
-  function show(id) {
-    document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === id));
-    window.scrollTo(0, 0);
-  }
-  function setMsg(id, text, cls) { const m = $(id); m.className = 'msg' + (cls ? ' ' + cls : ''); m.textContent = text || ''; }
-
-  /* ---------- Money parsing ---------- */
-  // Returns cents (integer) or null if invalid; blank -> 0 when allowBlank
-  function parseMoney(raw, allowBlank) {
-    const s = String(raw).replace(/[,\s$]/g, '');
-    if (!s) return allowBlank ? 0 : null;
-    if (!/^\d+(\.\d{1,2})?$/.test(s)) return null;
-    const cents = Math.round(parseFloat(s) * 100);
-    return cents <= 99999999999 ? cents : null;
-  }
-
-  /* ---------- Page 1 : Case Entry ---------- */
-  function buildBillNo() {
-    const sel = document.querySelector('input[name="lawyer"]:checked');
-    const n = sel ? sel.dataset.n : '1';
-    const s = sel ? sel.dataset.s : 'D';
-    const d = new Date();
-    return `${n}-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}/${s}`;
-  }
-  document.querySelectorAll('input[name="lawyer"]').forEach(r =>
-    r.addEventListener('change', () => { $('slNo').value = buildBillNo(); }));
-
-  function resetForm1() {
-    $('form1').reset();
-    $('slNo').value = buildBillNo();
-    setMsg('msg1');
-    document.querySelectorAll('#page1 .invalid').forEach(e => e.classList.remove('invalid'));
-  }
-  $('cancel1').addEventListener('click', resetForm1);
-
-  $('form1').addEventListener('submit', e => {
+  // Continue -> open the chosen page
+  $('chooser').addEventListener('submit', e => {
     e.preventDefault();
-    const sl = $('slNo').value.trim();
-    $('f-sl').classList.toggle('invalid', !sl);
-    if (!sl) { setMsg('msg1', 'Bill No is required.', 'error'); return; }
-    caseData = {
-      lawyer: document.querySelector('input[name="lawyer"]:checked').value,
-      slNo: sl,
-      caseCategory: $('caseCategory').value.trim()
-    };
-    setMsg('msg1');
-    $('refBill').textContent = caseData.slNo;
-    $('refSubject').textContent = caseData.caseCategory || '—';
-    startReceipt();
-    show('page3');
+    const sel = document.querySelector('input[name="task"]:checked');
+    if (sel) window.location.href = sel.value;
   });
 
-  /* ---------- Amount in words ---------- */
-  const ONES = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
-    'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
-  const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
-
-  function under1000(n) {
-    const parts = [];
-    if (n >= 100) { parts.push(ONES[Math.floor(n / 100)] + ' hundred'); n %= 100; }
-    if (n >= 20) { parts.push(TENS[Math.floor(n / 10)] + (n % 10 ? ' ' + ONES[n % 10] : '')); }
-    else if (n > 0) { parts.push(ONES[n]); }
-    return parts.join(' ');
-  }
-  function toWords(n) {
-    if (n === 0) return 'zero';
-    const scales = [[1e9, 'billion'], [1e6, 'million'], [1e3, 'thousand']];
-    const out = [];
-    for (const [v, name] of scales) {
-      if (n >= v) { out.push(under1000(Math.floor(n / v)) + ' ' + name); n %= v; }
-    }
-    if (n) out.push(under1000(n));
-    return out.join(' ');
-  }
-  function amountInWords(totalCents) {
-    const d = Math.floor(totalCents / 100), c = totalCents % 100;
-    let txt;
-    if (d && c) txt = `an amount of dollars ${toWords(d)} and cents ${toWords(c)} only`;
-    else if (d) txt = `an amount of dollars ${toWords(d)} only`;
-    else txt = `an amount of cents ${toWords(c)} only`;
-    return txt.charAt(0).toUpperCase() + txt.slice(1);
-  }
-  const WORDS_PLACEHOLDER = 'The amount in words will appear here automatically';
-  function updateWords() {
-    const raw = $('amount').value.trim();
-    const cents = parseMoney(raw, false);
-    const el = $('amountWords');
-    if (!raw) { el.textContent = WORDS_PLACEHOLDER; el.classList.add('empty'); return null; }
-    if (cents === null || cents === 0) { el.textContent = 'Enter a valid amount, e.g. 99.50'; el.classList.add('empty'); return null; }
-    el.textContent = amountInWords(cents);
-    el.classList.remove('empty');
-    return cents;
-  }
-  $('amount').addEventListener('input', updateWords);
-
-  /* ---------- Page 2 of the flow : Receipt ---------- */
-  function syncReceiptDate() {
-    $('receiptDate').textContent = formatReceiptDate($('receiptDateInput').value);
-  }
-  $('receiptDateInput').addEventListener('input', syncReceiptDate);
-  $('receiptDateInput').addEventListener('change', syncReceiptDate);
-
-  function startReceipt() {
-    // Defaults to today; an edited date survives Back/Next within the same receipt.
-    if (!$('receiptDateInput').value) $('receiptDateInput').value = isoToday();
-    syncReceiptDate();
-    $('billNo').textContent = caseData.slNo;   // Bill No is set on page 1 only
-  }
-
-  document.querySelectorAll('input[name="mode"]').forEach(r =>
-    r.addEventListener('change', () => {
-      const isOther = document.querySelector('input[name="mode"]:checked').value === 'Others';
-      $('othersWrap').classList.toggle('show', isOther);
-      if (isOther) $('modeOther').focus(); else $('modeOther').value = '';
-    }));
-
-  $('back3').addEventListener('click', () => show('page1'));
-  $('nextAccounts').addEventListener('click', () => { startAccounts(); show('page2'); });
-
-  $('form3').addEventListener('submit', async e => {
-    e.preventDefault();
-    const cents = updateWords();
-    const mode = document.querySelector('input[name="mode"]:checked').value;
-    const dateText = formatReceiptDate($('receiptDateInput').value);
-    $('receiptDateInput').classList.toggle('invalid', !dateText);
-    const checks = [
-      ['f-from', !!$('receivedFrom').value.trim()],
-      ['f-amount', cents !== null],
-      ['f-for', !!$('paymentFor').value.trim()],
-      ['f-mode', mode !== 'Others' || !!$('modeOther').value.trim()]
-    ];
-    checks.forEach(([id, ok]) => $(id).classList.toggle('invalid', !ok));
-    if (!dateText || checks.some(([, ok]) => !ok)) { setMsg('msg3', 'Please complete the highlighted fields.', 'error'); return; }
-
-    const receipt = {
-      date: dateText,
-      receivedFrom: $('receivedFrom').value.trim(),
-      amount: (cents / 100).toFixed(2),
-      amountWords: amountInWords(cents),
-      paymentFor: $('paymentFor').value.trim(),
-      mode,
-      modeOther: $('modeOther').value.trim()
-    };
-
-    const btn = $('submit3');
-    btn.disabled = true; btn.textContent = 'Saving…';
-    setMsg('msg3');
-    try {
-      // The accounts columns are filled in on the next page, after the client has left.
-      const res = await fetch('/api/records', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ case: caseData, accounts: {}, receipt })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) throw new Error(data.error || 'Save failed. Please try again.');
-      savedReceipt = receipt;
-      freeze(receipt);
-      showTally(data.tally);
-    } catch (err) {
-      setMsg('msg3', err.message, 'error');
-    } finally {
-      btn.disabled = false; btn.textContent = 'Submit';
-    }
-  });
-
-  function freeze(r) {
-    const set = (k, v) => { document.querySelector(`.val[data-for="${k}"]`).textContent = v; };
-    set('receivedFrom', r.receivedFrom);
-    set('amount', 'S$ ' + Number(r.amount).toLocaleString('en-SG', { minimumFractionDigits: 2 }));
-    set('paymentFor', r.paymentFor);
-    set('mode', r.mode === 'Others' ? `Others – ${r.modeOther}` : r.mode);
-    $('amountWordsFinal').textContent = `(${r.amountWords})`;
-    document.querySelectorAll('#page3 .invalid').forEach(e => e.classList.remove('invalid'));
-    $('page3').classList.add('frozen');
-    window.scrollTo(0, 0);
-  }
-
-  /* ---------- Tally status (the sheet row is already saved at this point) ---------- */
-  function showTally(t) {
-    const status = t && t.status;
-    $('tallyRetry').hidden = status !== 'failed';
-    if (status === 'posted') setMsg('msg3', 'Saved to records and added to Tally. Print the receipt, then press Next: Accounts.', 'ok');
-    else if (status === 'failed') setMsg('msg3', `Saved to records. NOT yet in Tally: ${t.error || 'unknown error'}. The receipt can be printed; press Retry Tally later.`, 'error');
-    else setMsg('msg3', 'Saved to records. Print the receipt, then press Next: Accounts.', 'ok');
-  }
-
-  $('tallyRetry').addEventListener('click', async () => {
-    const btn = $('tallyRetry');
-    btn.disabled = true; btn.textContent = 'Sending…';
-    try {
-      const res = await fetch('/api/tally/retry', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ billNo: caseData.slNo })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) throw new Error(data.error || 'Retry failed.');
-      showTally((data.results && data.results[0]) || { status: 'failed', error: 'Receipt not found in the records sheet' });
-    } catch (err) {
-      showTally({ status: 'failed', error: err.message });
-    } finally {
-      btn.disabled = false; btn.textContent = 'Retry Tally';
-    }
-  });
-
-  /* ---------- EXCEL: open the records sheet ---------- */
+  // Open Google Sheet (URL comes from the server; the fallback keeps the button useful offline)
   let sheetUrl = 'https://docs.google.com/spreadsheets/d/1t3Ty5NRJ4X1SWkfJZ7wYdG6UdbIXB94ORPTtuFBZK4Y/edit?gid=0#gid=0';
   fetch('/api/config').then(r => r.json()).then(c => { if (c && c.sheetUrl) sheetUrl = c.sheetUrl; }).catch(() => {});
-  $('excelBtn').addEventListener('click', () => window.open(sheetUrl, '_blank', 'noopener'));
-
-  /* ---------- Page 3 of the flow : Accounts (office use) ---------- */
-  function amountCents() {
-    return savedReceipt ? Math.round(Number(savedReceipt.amount) * 100) : 0;
-  }
-
-  function startAccounts() {
-    accountsSaved = false;
-    $('refAmount').textContent = savedReceipt ? 'S$ ' + money2(amountCents()) : '—';
-    setMsg('msg2');
-    updatePreview();
-  }
-
-  // Mirrors the server: /G -> Govin 70% · Raj 30%; /D -> Raj 70% · Govin 30%.
-  function autoSplit() {
-    const bill = caseData ? caseData.slNo : '';
-    const lawyer = caseData ? caseData.lawyer : '';
-    const govinLead = /\/G\s*$/i.test(bill) || (!/\/D\s*$/i.test(bill) && lawyer === 'Govinda Raju');
-    const total = amountCents();
-    const lead = Math.round(total * LEAD_PCT / 100);
-    return {
-      govinLead,
-      govin: govinLead ? lead : total - lead,
-      raj: govinLead ? total - lead : lead
-    };
-  }
-
-  function updatePreview() {
-    const total = amountCents();
-    const d = parseMoney($('disInc').value.trim(), true);
-    $('nettHint').innerHTML = d === null
-      ? '<strong>Nett:</strong> Dis/Inc is not a valid amount.'
-      : `<strong>Nett:</strong> S$ ${money2(total)} − S$ ${money2(d)} = <strong>S$ ${money2(total - d)}</strong>`;
-
-    const gRaw = $('govin').value.trim(), rRaw = $('raj').value.trim();
-    const g = gRaw ? parseMoney(gRaw, false) : null;
-    const r = rRaw ? parseMoney(rRaw, false) : null;
-    const s = autoSplit();
-    let txt;
-    if (!gRaw && !rRaw) {
-      txt = `<strong>Split (${s.govinLead ? '/G' : '/D'}, automatic):</strong> Govin S$ ${money2(s.govin)} · Raj S$ ${money2(s.raj)}`;
-    } else if (gRaw && !rRaw) {
-      txt = g === null ? '<strong>Split:</strong> Govin is not a valid amount.'
-        : `<strong>Split:</strong> Govin S$ ${money2(g)} · Raj gets the rest, S$ ${money2(Math.max(0, total - g))}`;
-    } else if (!gRaw && rRaw) {
-      txt = r === null ? '<strong>Split:</strong> Raj is not a valid amount.'
-        : `<strong>Split:</strong> Raj S$ ${money2(r)} · Govin gets the rest, S$ ${money2(Math.max(0, total - r))}`;
-    } else {
-      txt = '<strong>Split:</strong> both typed – kept exactly as entered.';
-    }
-    $('splitHint').innerHTML = txt;
-  }
-  ['disInc', 'govin', 'raj'].forEach(id => $(id).addEventListener('input', () => { accountsSaved = false; updatePreview(); }));
-  MONEY_KEYS.forEach(k => $(k).addEventListener('input', () => { accountsSaved = false; }));
-
-  function accountsTyped() {
-    return MONEY_KEYS.some(k => $(k).value.trim() !== '');
-  }
-
-  function resetForm2() {
-    $('form2').reset();
-    accountsSaved = false;
-    setMsg('msg2');
-    document.querySelectorAll('#page2 .invalid').forEach(e => e.classList.remove('invalid'));
-    updatePreview();
-  }
-  $('cancel2').addEventListener('click', resetForm2);
-  $('back2').addEventListener('click', () => show('page3'));
-
-  $('form2').addEventListener('submit', async e => {
-    e.preventDefault();
-    if (!savedReceipt || !caseData) { setMsg('msg2', 'No saved receipt – start again from Case Entry.', 'error'); return; }
-    const values = {};
-    let bad = false;
-    MONEY_KEYS.forEach(k => {
-      const raw = $(k).value.trim();
-      const cents = parseMoney(raw, true);
-      const field = document.querySelector(`#page2 .field[data-key="${k}"]`);
-      field.classList.toggle('invalid', cents === null);
-      if (cents === null) bad = true;
-      values[k] = raw && cents !== null ? (cents / 100).toFixed(2) : '';
-    });
-    if (bad) { setMsg('msg2', 'Please enter valid amounts, e.g. 120.50', 'error'); return; }
-    if (values.share !== '' && Number(values.share) > 100) {
-      document.querySelector('#page2 .field[data-key="share"]').classList.add('invalid');
-      setMsg('msg2', 'Share (%) must be between 0 and 100.', 'error'); return;
-    }
-
-    const btn = $('saveAccounts');
-    btn.disabled = true; btn.textContent = 'Saving…';
-    setMsg('msg2');
-    try {
-      const res = await fetch('/api/records/accounts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ billNo: caseData.slNo, accounts: values })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) throw new Error(data.error || 'Save failed. Please try again.');
-      accountsSaved = true;
-      setMsg('msg2', `Accounts saved to the records sheet for ${caseData.slNo}.`, 'ok');
-    } catch (err) {
-      setMsg('msg2', err.message, 'error');
-    } finally {
-      btn.disabled = false; btn.textContent = 'Save Accounts';
-    }
-  });
-
-  /* ---------- New receipt (last page) ---------- */
-  $('newEntry').addEventListener('click', () => {
-    if (accountsTyped() && !accountsSaved &&
-        !confirm('The accounts on this page have not been saved. Start a new receipt anyway?')) return;
-    $('page3').classList.remove('frozen');
-    $('form3').reset();
-    $('receiptDateInput').value = '';      // next receipt defaults to today again
-    $('receiptDate').textContent = '';
-    $('othersWrap').classList.remove('show');
-    $('tallyRetry').hidden = true;
-    updateWords();
-    setMsg('msg3');
-    caseData = null; savedReceipt = null;
-    resetForm2();
-    resetForm1();
-    show('page1');
-  });
-
-  resetForm1();
-  updatePreview();
+  $('sheetBtn').addEventListener('click', () => window.open(sheetUrl, '_blank', 'noopener'));
 })();
 </script>
 </body>

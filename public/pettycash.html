@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1f3a5f">
+<title>Raj Govin Law Practice – PETTY CASH</title>
+<style>
+  :root { --navy:#1f3a5f; --navy-soft:#f1f5fb; --ink:#1d232b; --muted:#6b7380; --bg:#e9edf2; --radius:8px; }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    font-size:16px; line-height:1.4;
+  }
+  .sheet {
+    width:min(210mm, 100% - 24px); margin:16px auto; background:#fff;
+    border-radius:var(--radius); box-shadow:0 2px 14px rgba(0,0,0,.12);
+    padding:clamp(18px,5vw,18mm) clamp(16px,5vw,20mm);
+  }
+  h1.title { margin:0; text-align:center; color:var(--navy); font-size:clamp(20px,5.6vw,28px);
+    font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+  .address { text-align:center; font-size:clamp(11px,3.1vw,13px); color:var(--muted); margin:4px 0 0; }
+  .doc-label { text-align:center; font-weight:800; letter-spacing:.4em; font-size:clamp(14px,4vw,16px);
+    margin:10px 0 0; padding-left:.4em; }
+  hr.rule { border:0; border-top:2px solid var(--navy); margin:16px 0 18px; }
+  .placeholder {
+    background:var(--navy-soft); border-radius:6px; padding:28px 18px;
+    text-align:center; font-size:17px; color:var(--navy); font-weight:600;
+  }
+  .placeholder .sub { display:block; font-weight:400; font-size:13.5px; color:var(--muted); margin-top:8px; }
+  .actions { display:flex; gap:10px; margin-top:24px; }
+  .btn { flex:1; min-height:50px; font:inherit; font-weight:600; font-size:16px; border-radius:6px;
+    border:1px solid var(--navy); cursor:pointer; background:#fff; color:var(--navy); padding:0 8px; }
+  @media (max-width:560px) {
+    .sheet { width:100%; margin:0; border-radius:0; box-shadow:none; min-height:100vh; }
+    .actions { padding-bottom:env(safe-area-inset-bottom); }
+  }
+</style>
+</head>
+<body>
+
+<main class="sheet">
+  <h1 class="title">Raj Govin Law Practice</h1>
+  <p class="address">People's Park Centre, #05-48, Singapore 058357</p>
+  <p class="doc-label">PETTY CASH</p>
+  <hr class="rule">
+
+  <div class="placeholder">
+    This page is to submit petty cash claims.
+    <span class="sub">Under development – Module 1.</span>
+  </div>
+
+  <div class="actions">
+    <button type="button" class="btn" onclick="window.location.href='index.html'">Return</button>
+  </div>
+</main>
+
+</body>
+</html>
