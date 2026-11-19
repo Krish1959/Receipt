@@ -4,37 +4,125 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#1f3a5f">
-<title>Raj Govin Law Practice – INVOICE</title>
+<title>Raj Govin Law Practice – Invoice</title>
 <style>
-  :root { --navy:#1f3a5f; --navy-soft:#f1f5fb; --ink:#1d232b; --muted:#6b7380; --bg:#e9edf2; --radius:8px; }
+  :root {
+    --navy: #1f3a5f;
+    --navy-soft: #f1f5fb;
+    --ink: #1d232b;
+    --muted: #6b7380;
+    --line: #c9d1dc;
+    --danger: #b3261e;
+    --ok: #1e7a3c;
+    --bg: #e9edf2;
+    --radius: 8px;
+  }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
   body {
-    margin:0; background:var(--bg); color:var(--ink);
-    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-    font-size:16px; line-height:1.4;
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 16px; line-height: 1.4;
   }
   .sheet {
-    width:min(210mm, 100% - 24px); margin:16px auto; background:#fff;
-    border-radius:var(--radius); box-shadow:0 2px 14px rgba(0,0,0,.12);
-    padding:clamp(18px,5vw,18mm) clamp(16px,5vw,20mm);
+    width: min(210mm, 100% - 24px); margin: 16px auto; background: #fff;
+    border-radius: var(--radius); box-shadow: 0 2px 14px rgba(0,0,0,.12);
+    padding: clamp(18px, 5vw, 18mm) clamp(16px, 5vw, 20mm);
   }
-  h1.title { margin:0; text-align:center; color:var(--navy); font-size:clamp(20px,5.6vw,28px);
-    font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
-  .address { text-align:center; font-size:clamp(11px,3.1vw,13px); color:var(--muted); margin:4px 0 0; }
-  .doc-label { text-align:center; font-weight:800; letter-spacing:.4em; font-size:clamp(14px,4vw,16px);
-    margin:10px 0 0; padding-left:.4em; }
-  hr.rule { border:0; border-top:2px solid var(--navy); margin:16px 0 18px; }
-  .placeholder {
-    background:var(--navy-soft); border-radius:6px; padding:28px 18px;
-    text-align:center; font-size:17px; color:var(--navy); font-weight:600;
+  h1.title {
+    margin: 0; text-align: center; color: var(--navy);
+    font-size: clamp(20px, 5.6vw, 28px); font-weight: 800;
+    letter-spacing: .06em; text-transform: uppercase;
   }
-  .placeholder .sub { display:block; font-weight:400; font-size:13.5px; color:var(--muted); margin-top:8px; }
-  .actions { display:flex; gap:10px; margin-top:24px; }
-  .btn { flex:1; min-height:50px; font:inherit; font-weight:600; font-size:16px; border-radius:6px;
-    border:1px solid var(--navy); cursor:pointer; background:#fff; color:var(--navy); padding:0 8px; }
-  @media (max-width:560px) {
-    .sheet { width:100%; margin:0; border-radius:0; box-shadow:none; min-height:100vh; }
-    .actions { padding-bottom:env(safe-area-inset-bottom); }
+  .address { text-align: center; font-size: clamp(11px, 3.1vw, 13px); color: var(--muted); margin: 4px 0 0; }
+  .doc-label {
+    text-align: center; font-weight: 800; letter-spacing: .4em;
+    font-size: clamp(14px, 4vw, 16px); margin: 10px 0 0; padding-left: .4em;
+  }
+  hr.rule { border: 0; border-top: 2px solid var(--navy); margin: 16px 0 18px; }
+
+  .step-label {
+    font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); margin: 22px 0 10px;
+  }
+  .step-label:first-of-type { margin-top: 0; }
+
+  /* ---------- Fields ---------- */
+  .field { margin-bottom: 14px; }
+  .field > label, .field > .label { display: block; font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+  .field input[type="text"], .field input[type="date"], .field textarea {
+    width: 100%; font: inherit; font-size: 16px; color: var(--ink);
+    padding: 11px 12px; border: 1px solid var(--line); border-radius: 6px;
+    background: #fff; outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  .field textarea { resize: vertical; min-height: 60px; }
+  .field input:focus, .field textarea:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(31,58,95,.14); }
+  .field.invalid input, .field.invalid textarea { border-color: var(--danger); }
+  .hint { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+
+  .choices { display: flex; flex-wrap: wrap; gap: 10px; }
+  .choice {
+    display: flex; align-items: center; gap: 8px; padding: 10px 14px; min-height: 44px;
+    border: 1px solid var(--line); border-radius: 6px; cursor: pointer;
+    font-weight: 500; user-select: none; flex: 1 1 auto;
+  }
+  .choice input { accent-color: var(--navy); width: 18px; height: 18px; margin: 0; }
+  .choice:has(input:checked) { border-color: var(--navy); background: var(--navy-soft); }
+
+  /* ---------- The two big boxes ---------- */
+  .boxes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .box {
+    border: 2px dashed var(--line); border-radius: var(--radius);
+    min-height: 190px; padding: 18px 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; gap: 10px; background: #fdfefe;
+    transition: border-color .15s, background .15s;
+  }
+  .box.drop { cursor: pointer; }
+  .box.drop:hover { border-color: var(--navy); background: var(--navy-soft); }
+  .box.dragover { border-color: var(--navy); background: var(--navy-soft); border-style: solid; }
+  .box.done { border-style: solid; border-color: var(--ok); background: #f3faf5; }
+  .box.plain { border-style: solid; }
+  .box-title { font-weight: 700; font-size: 16px; color: var(--navy); }
+  .box-note { font-size: 13px; color: var(--muted); }
+  .box-note.filed { color: var(--ok); font-weight: 600; }
+  .box .icon { font-size: 30px; line-height: 1; }
+  .box.full { grid-column: 1 / -1; }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    min-height: 48px; font: inherit; font-weight: 600; font-size: 16px;
+    border-radius: 6px; border: 1px solid var(--navy); cursor: pointer;
+    background: var(--navy); color: #fff; padding: 0 16px;
+  }
+  .btn.ghost { background: #fff; color: var(--navy); }
+  .btn.wide { width: 100%; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn.ghost:disabled { background: #f6f7f9; }
+  .actions { display: flex; gap: 10px; margin-top: 24px; }
+  .linkish {
+    background: none; border: 0; color: var(--navy); font: inherit; font-size: 13px;
+    text-decoration: underline; cursor: pointer; padding: 4px;
+  }
+  .msg { margin-top: 12px; font-size: 14px; text-align: center; min-height: 1em; }
+  .msg.error { color: var(--danger); }
+  .msg.ok { color: var(--ok); }
+  .msg.warn { color: #9a6700; }
+
+  .pairbar {
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 16px;
+    background: var(--navy-soft); border-radius: 6px; padding: 10px 12px;
+    font-size: 14px; margin-bottom: 16px;
+  }
+  .pairbar strong { color: var(--navy); }
+
+  @media (max-width: 620px) {
+    .sheet { width: 100%; margin: 0; border-radius: 0; box-shadow: none; min-height: 100vh; }
+    .boxes { grid-template-columns: 1fr; }
+    .row2 { grid-template-columns: 1fr; }
+    .actions { flex-direction: column; padding-bottom: env(safe-area-inset-bottom); }
   }
 </style>
 </head>
@@ -46,15 +134,310 @@
   <p class="doc-label">INVOICE</p>
   <hr class="rule">
 
-  <div class="placeholder">
-    This page is to create Invoices.
-    <span class="sub">Under development – Module 1.</span>
+  <!-- ===== 1. Serial and date ===== -->
+  <p class="step-label">1 · Serial number and issue date</p>
+
+  <div class="field">
+    <span class="label">Lawyer:</span>
+    <div class="choices" role="radiogroup">
+      <label class="choice"><input type="radio" name="lawyer" value="Dora Raj" data-s="D" checked>Dora Raj</label>
+      <label class="choice"><input type="radio" name="lawyer" value="Govinda Raju" data-s="G">Govinda Raju</label>
+    </div>
   </div>
+
+  <div class="row2">
+    <div class="field" id="f-sl">
+      <label for="slNo">Sl No:</label>
+      <input type="text" id="slNo" maxlength="40">
+    </div>
+    <div class="field" id="f-date">
+      <label for="issueDate">Invoice Date:</label>
+      <input type="date" id="issueDate">
+    </div>
+  </div>
+  <div class="hint">Format YYYYMMDD-HHMM/D for Dora Raj, /G for Govinda Raju. Refreshes when the lawyer changes. Editable.</div>
+
+  <!-- ===== 2. Download the template ===== -->
+  <p class="step-label">2 · Prepare the invoice in Word</p>
+  <button type="button" class="btn ghost wide" id="dlTemplate">Download Invoice Template</button>
+  <div class="hint">The serial number and date above are filled in for you. Add the client's address, the payment description, amounts, total and signature in Word, then save it.</div>
+
+  <!-- ===== 3. The two boxes ===== -->
+  <p class="step-label">3 · File the invoice, then take its receipt</p>
+  <div class="boxes">
+    <div class="box drop" id="dropInvoice" tabindex="0" role="button" aria-label="Drag and drop the updated invoice">
+      <span class="icon" aria-hidden="true">⬇</span>
+      <span class="box-title">Drag &amp; Drop the Updated Invoice</span>
+      <span class="box-note" id="noteInvoice">or tap to choose the .docx file</span>
+    </div>
+
+    <div class="box plain">
+      <span class="icon" aria-hidden="true">⬆</span>
+      <button type="button" class="btn" id="dlReceipt" disabled>Download the Receipt</button>
+      <span class="box-note" id="noteReceipt">Available once the invoice is filed</span>
+    </div>
+  </div>
+
+  <!-- ===== 4. The revised receipt ===== -->
+  <div class="boxes" id="reviseWrap" hidden style="margin-top:14px">
+    <div class="box drop full" id="dropReceipt" tabindex="0" role="button" aria-label="Drag and drop the revised receipt">
+      <span class="icon" aria-hidden="true">⬇</span>
+      <span class="box-title">Drag &amp; Drop Revised Receipt</span>
+      <span class="box-note" id="noteRevised">or tap to choose the .docx file</span>
+      <button type="button" class="linkish" id="useAsIs">File the receipt unchanged</button>
+    </div>
+  </div>
+
+  <!-- ===== 5. What goes in the sheet ===== -->
+  <section id="summary" hidden>
+    <p class="step-label">4 · What is recorded in the Invoices sheet</p>
+    <div class="pairbar">
+      <div><strong>Invoice:</strong> <span id="pvDate">—</span></div>
+      <div><strong>Receipt:</strong> <span id="pvRecDate">—</span></div>
+      <div><strong>Sl No:</strong> <span id="pvSl">—</span></div>
+    </div>
+    <div class="field" id="f-client">
+      <label for="client">Client:</label>
+      <input type="text" id="client" maxlength="120">
+    </div>
+    <div class="field" id="f-desc">
+      <label for="description">Short Description:</label>
+      <textarea id="description" maxlength="160"></textarea>
+      <div class="hint">Keep it short — the full wording stays in the filed document. <span id="descCount">0</span>/160</div>
+    </div>
+    <div class="field" id="f-total">
+      <label for="total">Total (S$):</label>
+      <input type="text" id="total" inputmode="decimal" maxlength="13" placeholder="0.00">
+    </div>
+  </section>
 
   <div class="actions">
-    <button type="button" class="btn" onclick="window.location.href='index.html'">Return</button>
+    <button type="button" class="btn ghost" id="home">Main Page</button>
+    <button type="button" class="btn" id="next" disabled>Next</button>
   </div>
+  <p class="msg" id="msg" role="status"></p>
 </main>
 
+<input type="file" id="picker" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const pad = n => String(n).padStart(2, '0');
+
+  let jobId = null;
+  let receiptFiled = false;
+  let pickerTarget = null;
+
+  /* ---------- small helpers ---------- */
+  const isoToday = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+  // "2026-11-19" -> "19-11-2026" : the format the Word template uses
+  const isoToDmy = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? `${m[3]}-${m[2]}-${m[1]}` : ''; };
+  const dmyToIso = d => { const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(d || ''); return m ? `${m[3]}-${m[2]}-${m[1]}` : ''; };
+  const addDays = (dmy, n) => {
+    const iso = dmyToIso(dmy); if (!iso) return '';
+    const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n);
+    return `${pad(d.getUTCDate())}-${pad(d.getUTCMonth() + 1)}-${d.getUTCFullYear()}`;
+  };
+  function setMsg(text, cls) { const m = $('msg'); m.className = 'msg' + (cls ? ' ' + cls : ''); m.textContent = text || ''; }
+  const goHome = () => { window.location.href = 'index.html'; };
+
+  /* ---------- serial number ---------- */
+  function buildSerial() {
+    const sel = document.querySelector('input[name="lawyer"]:checked');
+    const s = sel ? sel.dataset.s : 'D';
+    const d = new Date();
+    return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}/${s}`;
+  }
+  document.querySelectorAll('input[name="lawyer"]').forEach(r =>
+    r.addEventListener('change', () => { if (!jobId) $('slNo').value = buildSerial(); }));
+
+  $('slNo').value = buildSerial();
+  $('issueDate').value = isoToday();
+
+  /* ---------- 2. download the stamped template ---------- */
+  $('dlTemplate').addEventListener('click', () => {
+    const slNo = $('slNo').value.trim();
+    const date = isoToDmy($('issueDate').value);
+    $('f-sl').classList.toggle('invalid', !slNo);
+    $('f-date').classList.toggle('invalid', !date);
+    if (!slNo || !date) { setMsg('Enter a Sl No and a valid invoice date first.', 'error'); return; }
+    setMsg('Template downloaded. Fill it in Word, save it, then drop it in the left box.', 'ok');
+    window.location.href = `/api/invoice/template?slNo=${encodeURIComponent(slNo)}&date=${encodeURIComponent(date)}`;
+  });
+
+  /* ---------- file reading ---------- */
+  function readBase64(file) {
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(String(fr.result).split(',')[1] || '');
+      fr.onerror = () => reject(new Error('That file could not be read.'));
+      fr.readAsDataURL(file);
+    });
+  }
+  const isDocx = f => f && /\.docx$/i.test(f.name);
+
+  // Makes a box accept both a dropped file and a tap that opens the file picker.
+  function wireDrop(box, onFile) {
+    const stop = e => { e.preventDefault(); e.stopPropagation(); };
+    ['dragenter', 'dragover'].forEach(ev => box.addEventListener(ev, e => { stop(e); box.classList.add('dragover'); }));
+    ['dragleave', 'dragend'].forEach(ev => box.addEventListener(ev, e => { stop(e); box.classList.remove('dragover'); }));
+    box.addEventListener('drop', e => {
+      stop(e); box.classList.remove('dragover');
+      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) onFile(f);
+    });
+    box.addEventListener('click', e => {
+      if (e.target.classList.contains('linkish')) return;    // the "unchanged" link is not a picker
+      pickerTarget = onFile; $('picker').value = ''; $('picker').click();
+    });
+    box.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickerTarget = onFile; $('picker').value = ''; $('picker').click(); }
+    });
+  }
+  $('picker').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    if (f && pickerTarget) pickerTarget(f);
+  });
+
+  async function post(url, body) {
+    const res = await fetch(url, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.error || 'That did not go through. Please try again.');
+    return data;
+  }
+
+  /* ---------- 3a. the completed invoice ---------- */
+  wireDrop($('dropInvoice'), async file => {
+    if (!isDocx(file)) { setMsg('Please drop the Word (.docx) invoice.', 'error'); return; }
+    const box = $('dropInvoice');
+    $('noteInvoice').textContent = 'Filing…';
+    setMsg('');
+    try {
+      const base64 = await readBase64(file);
+      const data = await post('/api/invoice/invoice', { slNo: $('slNo').value.trim(), base64 });
+      jobId = data.jobId;
+
+      box.classList.add('done');
+      $('noteInvoice').className = 'box-note filed';
+      $('noteInvoice').textContent = data.dryRun ? `${file.name} read (dry run – not sent to Drive)` : `Filed: ${file.name}`;
+      $('dropInvoice').querySelector('.box-title').textContent = 'Invoice filed';
+
+      $('dlReceipt').disabled = false;
+      $('noteReceipt').textContent = `Dated ${data.receiptDate} — ${data.fields.issueDate || 'the invoice date'} plus 3 days`;
+
+      fillSummary(data);
+      setMsg(data.warning || 'Invoice filed. Now download the receipt and check it.', data.warning ? 'warn' : 'ok');
+    } catch (err) {
+      box.classList.remove('done');
+      $('noteInvoice').className = 'box-note';
+      $('noteInvoice').textContent = 'or tap to choose the .docx file';
+      setMsg(err.message, 'error');
+    }
+  });
+
+  function fillSummary(data) {
+    const f = data.fields || {};
+    $('summary').hidden = false;
+    $('pvSl').textContent = data.slNo || f.slNo || '—';
+    $('pvDate').textContent = f.issueDate || isoToDmy($('issueDate').value) || '—';
+    $('pvRecDate').textContent = data.receiptDate || '—';
+    if (!$('client').value) $('client').value = f.client || '';
+    if (!$('description').value) $('description').value = (f.description || '').slice(0, 160);
+    if (!$('total').value) $('total').value = f.total || '';
+    countDesc();
+  }
+
+  /* ---------- 3b. take the generated receipt ---------- */
+  $('dlReceipt').addEventListener('click', () => {
+    if (!jobId) return;
+    $('reviseWrap').hidden = false;
+    setMsg('Check the receipt in Word, then drop it back in the box below.', 'ok');
+    window.location.href = `/api/invoice/receipt?jobId=${encodeURIComponent(jobId)}`;
+  });
+
+  /* ---------- 4. the revised receipt ---------- */
+  async function fileReceipt(base64, label) {
+    const data = await post('/api/invoice/receipt', { jobId, base64 });
+    receiptFiled = true;
+    const box = $('dropReceipt');
+    box.classList.add('done');
+    box.querySelector('.box-title').textContent = 'Receipt filed';
+    $('noteRevised').className = 'box-note filed';
+    $('noteRevised').textContent = data.dryRun ? `${label} read (dry run – not sent to Drive)` : `Filed: ${label}`;
+    $('useAsIs').hidden = true;
+    $('pvRecDate').textContent = data.receiptDate || $('pvRecDate').textContent;
+    $('next').disabled = false;
+    setMsg(data.warning || 'Receipt filed. Press Next to record the pair.', data.warning ? 'warn' : 'ok');
+  }
+
+  wireDrop($('dropReceipt'), async file => {
+    if (!jobId) { setMsg('File the invoice first.', 'error'); return; }
+    if (!isDocx(file)) { setMsg('Please drop the Word (.docx) receipt.', 'error'); return; }
+    $('noteRevised').textContent = 'Filing…';
+    try { await fileReceipt(await readBase64(file), file.name); }
+    catch (err) { $('noteRevised').textContent = 'or tap to choose the .docx file'; setMsg(err.message, 'error'); }
+  });
+
+  // Nothing to change in the receipt: send back the copy the server made.
+  $('useAsIs').addEventListener('click', async e => {
+    e.stopPropagation();
+    if (!jobId) return;
+    $('useAsIs').disabled = true;
+    $('noteRevised').textContent = 'Filing…';
+    try {
+      const res = await fetch(`/api/invoice/receipt?jobId=${encodeURIComponent(jobId)}`);
+      if (!res.ok) throw new Error('The generated receipt could not be read back.');
+      const blob = await res.blob();
+      const b64 = await readBase64(new File([blob], 'receipt.docx'));
+      await fileReceipt(b64, 'receipt as generated');
+    } catch (err) {
+      $('useAsIs').disabled = false;
+      $('noteRevised').textContent = 'or tap to choose the .docx file';
+      setMsg(err.message, 'error');
+    }
+  });
+
+  /* ---------- 5. record the pair ---------- */
+  function countDesc() { $('descCount').textContent = $('description').value.length; }
+  $('description').addEventListener('input', countDesc);
+
+  $('next').addEventListener('click', async () => {
+    if (!jobId || !receiptFiled) { setMsg('File the invoice and its receipt first.', 'error'); return; }
+    const client = $('client').value.trim();
+    const total = $('total').value.trim();
+    const okTotal = /^\d+(\.\d{1,2})?$/.test(total.replace(/[,\s$]/g, '')) && Number(total.replace(/[,\s$]/g, '')) > 0;
+    $('f-client').classList.toggle('invalid', !client);
+    $('f-total').classList.toggle('invalid', !okTotal);
+    if (!client || !okTotal) { setMsg('Please check the Client and the Total.', 'error'); return; }
+
+    const btn = $('next');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try {
+      const data = await post('/api/invoice/finalise', {
+        jobId,
+        slNo: $('slNo').value.trim(),
+        date: $('pvDate').textContent.trim(),
+        receiptDate: $('pvRecDate').textContent.trim(),
+        client,
+        description: $('description').value.trim(),
+        total
+      });
+      setMsg(data.dryRun ? 'Recorded (dry run). Returning to the main page…' : 'Recorded in the Invoices sheet. Returning to the main page…', 'ok');
+      setTimeout(goHome, 1200);
+    } catch (err) {
+      btn.disabled = false; btn.textContent = 'Next';
+      setMsg(err.message, 'error');
+    }
+  });
+
+  $('home').addEventListener('click', () => {
+    if (jobId && !receiptFiled && !confirm('This invoice has no receipt filed yet. Leave anyway?')) return;
+    goHome();
+  });
+})();
+</script>
 </body>
 </html>

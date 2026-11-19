@@ -242,7 +242,7 @@
       <div class="field" id="f-sl">
         <label for="slNo">Bill No:</label>
         <input type="text" id="slNo" maxlength="40">
-        <div class="hint">Auto-filled as n-YYYYMMDD-HHMM/x (1…/D = Dora Raj, 2…/G = Govinda Raju). Refreshes when the lawyer is changed. Editable.</div>
+        <div class="hint">Auto-filled as YYYYMMDD-HHMM/x (/D = Dora Raj, /G = Govinda Raju). Refreshes when the lawyer is changed. Editable.</div>
       </div>
 
       <div class="field">
@@ -425,10 +425,9 @@
   /* ---------- Page 1 : Case Entry ---------- */
   function buildBillNo() {
     const sel = document.querySelector('input[name="lawyer"]:checked');
-    const n = sel ? sel.dataset.n : '1';
     const s = sel ? sel.dataset.s : 'D';
     const d = new Date();
-    return `${n}-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}/${s}`;
+    return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}/${s}`;
   }
   document.querySelectorAll('input[name="lawyer"]').forEach(r =>
     r.addEventListener('change', () => { $('slNo').value = buildBillNo(); }));
