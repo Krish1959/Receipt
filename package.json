@@ -1,7 +1,7 @@
 {
   "name": "raj-govin-receipts",
-  "version": "3.0.0",
-  "description": "Raj Govin Law Practice – digital records: receipts, invoices and petty-cash claims, logged to Google Drive",
+  "version": "3.1.0",
+  "description": "Raj Govin Law Practice – digital records: cash receipts, invoices and petty-cash claims, filed to Google Drive",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "express": "^4.21.0",
-    "googleapis": "^144.0.0"
+    "googleapis": "^144.0.0",
+    "jszip": "^3.10.1"
   }
 }

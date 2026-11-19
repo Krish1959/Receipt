@@ -2,12 +2,14 @@
 
 const path = require('path');
 const express = require('express');
-const { google } = require('googleapis');
+
+const g = require('./lib/google');
+const invoiceRoutes = require('./lib/invoice-routes');
 
 const PORT = process.env.PORT || 3000;
 const SHEET_ID = (process.env.GOOGLE_SHEET_ID || '').trim().replace(/^["']|["']$/g, '');
 const SHEET_TAB = (process.env.GOOGLE_SHEET_TAB || 'Records').trim();
-const DRY_RUN = !process.env.GOOGLE_CREDENTIALS_JSON || !SHEET_ID;
+const DRY_RUN = g.authMode() === 'none' || !SHEET_ID;
 
 // Columns 1–17 follow the office ledger order exactly (two blank spacer columns kept).
 // Columns 18–20 are extra details collected by the app.
@@ -35,22 +37,9 @@ const LEAD_PCT = 70;                           // lead lawyer's share of AMOUNT;
 const MODES = ['PayNow', 'Cash', 'Others'];
 
 /* ---------- Google Sheets client ---------- */
-let sheets = null;
+// Shared with the invoice module, so one set of credentials serves both.
+const getSheets = g.getSheets;
 let headerChecked = false;
-
-function getSheets() {
-  if (sheets) return sheets;
-  const creds = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
-  const auth = new google.auth.GoogleAuth({
-    credentials: {
-      client_email: creds.client_email,
-      private_key: String(creds.private_key).replace(/\\n/g, '\n')
-    },
-    scopes: ['https://www.googleapis.com/auth/spreadsheets']
-  });
-  sheets = google.sheets({ version: 'v4', auth });
-  return sheets;
-}
 
 async function ensureHeader() {
   if (headerChecked) return;
@@ -180,24 +169,30 @@ function sgtNow() {
 
 /* ---------- App ---------- */
 const app = express();
-app.use(express.json({ limit: '20kb' }));
+// Word documents arrive from the Invoice page as base64 in JSON.
+app.use(express.json({ limit: '12mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/api/invoice', invoiceRoutes.router);
 
 // Link for the "Open Google Sheet" buttons
 app.get('/api/config', (_req, res) => {
   res.json({
-    sheetUrl: SHEET_ID ? `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit` : null
+    sheetUrl: SHEET_ID ? `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit` : null,
+    authMode: g.authMode()
   });
 });
 
 // Real end-to-end check: reads the sheet and tests write access.
 app.get('/healthz', async (_req, res) => {
-  if (DRY_RUN) return res.json({ ok: true, sheets: 'dry-run', reason: 'GOOGLE_CREDENTIALS_JSON or GOOGLE_SHEET_ID not set' });
-  let serviceAccount = 'unreadable';
+  if (DRY_RUN) return res.json({ ok: true, sheets: 'dry-run', authMode: g.authMode(), reason: 'Google credentials or GOOGLE_SHEET_ID not set' });
+  let serviceAccount = g.authMode();
   try { serviceAccount = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON).client_email; } catch (_) {}
   try {
     await ensureHeader();                       // needs read + write
-    res.json({ ok: true, sheets: 'connected', serviceAccount, sheetId: SHEET_ID, tab: SHEET_TAB });
+    let invoices = 'not-configured';
+    try { await invoiceRoutes.ensureHeader(); invoices = invoiceRoutes.DRY_RUN ? 'dry-run' : 'connected'; }
+    catch (e) { invoices = `error: ${e.message}`; }
+    res.json({ ok: true, sheets: 'connected', authMode: g.authMode(), serviceAccount, sheetId: SHEET_ID, tab: SHEET_TAB, invoices });
   } catch (err) {
     res.status(500).json({
       ok: false, sheets: 'error', serviceAccount, sheetId: SHEET_ID,
@@ -342,6 +337,7 @@ app.post('/api/records/accounts', async (req, res) => {
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`Raj Govin digital records running on port ${PORT}`
+      + ` | auth: ${g.authMode()}`
       + `${DRY_RUN ? ' (DRY RUN – no Google credentials set)' : ''}`);
   });
 }

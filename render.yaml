@@ -10,9 +10,41 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "22"
+
+      # --- Cash Receipts sheet (unchanged) ---
       - key: GOOGLE_SHEET_TAB
         value: Records
-      - key: GOOGLE_CREDENTIALS_JSON
-        sync: false
       - key: GOOGLE_SHEET_ID
+        sync: false
+
+      # --- Invoices sheet ---
+      - key: INVOICES_SHEET_ID
+        value: 172IDDbv4xFD6IHXyn0ob0y-n1jYxciH5Csg_Wp5d8Lk
+      - key: INVOICES_SHEET_TAB
+        value: Invoices
+
+      # --- Drive folders under /Raj&Raju/ ---
+      - key: DRIVE_FOLDER_INVOICES
+        value: 156PV1kK2LuhcwXg8yeWT0XyfPXQ4o6hC
+      - key: DRIVE_FOLDER_CASH_RECEIPTS
+        value: 1oX3hfn-gjMf470zQnRI4xeQR2HW5uhq9
+      - key: INVOICE_TEMPLATE_FILE_ID
+        value: 1LDoDWUm-Mp_EwmYsdU8lfzVrbBTn-dFP
+
+      # Days between the invoice and the receipt
+      - key: RECEIPT_OFFSET_DAYS
+        value: "3"
+
+      # --- Credentials: set ONE of these two sets ---
+      # Preferred on a gmail.com account – acts as the practice's own account,
+      # so uploaded files use its storage.
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_OAUTH_REFRESH_TOKEN
+        sync: false
+      # Service account. Fine for Sheets; Drive uploads can fail with
+      # "storage quota exceeded" because a service account has no quota.
+      - key: GOOGLE_CREDENTIALS_JSON
         sync: false
