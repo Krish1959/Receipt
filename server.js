@@ -4,6 +4,7 @@ const path = require('path');
 const express = require('express');
 
 const g = require('./lib/google');
+const auth = require('./lib/auth');
 const invoiceRoutes = require('./lib/invoice-routes');
 
 const PORT = process.env.PORT || 3000;
@@ -171,6 +172,11 @@ function sgtNow() {
 const app = express();
 // Word documents arrive from the Invoice page as base64 in JSON.
 app.use(express.json({ limit: '12mb' }));
+
+// Everything below this line needs the office password. /healthz, the login
+// page and the login call itself stay open.
+auth.mount(app);
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/invoice', invoiceRoutes.router);
 
