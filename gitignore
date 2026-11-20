@@ -1,0 +1,13 @@
+# Dependencies – Render installs these itself from package.json
+node_modules/
+
+# Credentials. Never commit these.
+tools/client_secret*.json
+*.env
+.env
+service-account*.json
+
+# Local scratch
+*.log
+.DS_Store
+Thumbs.db
