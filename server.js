@@ -195,10 +195,31 @@ app.get('/healthz', async (_req, res) => {
   try { serviceAccount = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON).client_email; } catch (_) {}
   try {
     await ensureHeader();                       // needs read + write
-    let invoices = 'not-configured';
-    try { await invoiceRoutes.ensureHeader(); invoices = invoiceRoutes.DRY_RUN ? 'dry-run' : 'connected'; }
-    catch (e) { invoices = `error: ${e.message}`; }
-    res.json({ ok: true, sheets: 'connected', authMode: g.authMode(), serviceAccount, sheetId: SHEET_ID, tab: SHEET_TAB, invoices });
+    // The invoice module reports honestly: "connected" only after a real
+    // read/write of the Invoices sheet, never because a check was skipped.
+    const inv = invoiceRoutes.status();
+    let invoices;
+    if (!inv.sheetConfigured) invoices = 'NOT CONFIGURED - INVOICES_SHEET_ID is not set';
+    else if (inv.dryRun) invoices = 'dry-run';
+    else {
+      try { await invoiceRoutes.ensureHeader(); invoices = 'connected'; }
+      catch (e) { invoices = `error: ${e.message}`; }
+    }
+    res.json({
+      ok: true, sheets: 'connected', authMode: g.authMode(), serviceAccount,
+      sheetId: SHEET_ID, tab: SHEET_TAB, invoices,
+      env: {
+        INVOICES_SHEET_ID: inv.sheetConfigured,
+        DRIVE_FOLDER_INVOICES: inv.folderInvoices,
+        DRIVE_FOLDER_CASH_RECEIPTS: inv.folderCashReceipts,
+        INVOICE_TEMPLATE_FILE_ID: inv.templateFile,
+        GOOGLE_OAUTH_CLIENT_ID: !!process.env.GOOGLE_OAUTH_CLIENT_ID,
+        GOOGLE_OAUTH_CLIENT_SECRET: !!process.env.GOOGLE_OAUTH_CLIENT_SECRET,
+        GOOGLE_OAUTH_REFRESH_TOKEN: !!process.env.GOOGLE_OAUTH_REFRESH_TOKEN,
+        APP_PASSWORD: !!process.env.APP_PASSWORD,
+        APP_SECRET: !!process.env.APP_SECRET
+      }
+    });
   } catch (err) {
     res.status(500).json({
       ok: false, sheets: 'error', serviceAccount, sheetId: SHEET_ID,
