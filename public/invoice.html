@@ -209,6 +209,11 @@
       <label for="total">Total (S$):</label>
       <input type="text" id="total" inputmode="decimal" maxlength="13" placeholder="0.00">
     </div>
+    <div class="field">
+      <label for="remarks">Remarks:</label>
+      <textarea id="remarks" maxlength="200" placeholder="Optional — anything worth noting against this pair"></textarea>
+      <div class="hint">Optional. <span id="remCount">0</span>/200</div>
+    </div>
   </section>
 
   <div class="actions">
@@ -403,6 +408,7 @@
   /* ---------- 5. record the pair ---------- */
   function countDesc() { $('descCount').textContent = $('description').value.length; }
   $('description').addEventListener('input', countDesc);
+  $('remarks').addEventListener('input', () => { $('remCount').textContent = $('remarks').value.length; });
 
   $('next').addEventListener('click', async () => {
     if (!jobId || !receiptFiled) { setMsg('File the invoice and its receipt first.', 'error'); return; }
@@ -423,6 +429,7 @@
         receiptDate: $('pvRecDate').textContent.trim(),
         client,
         description: $('description').value.trim(),
+        remarks: $('remarks').value.trim(),
         total
       });
       setMsg(data.dryRun ? 'Recorded (dry run). Returning to the main page…' : 'Recorded in the Invoices sheet. Returning to the main page…', 'ok');
