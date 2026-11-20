@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1f3a5f">
+<title>Raj Govin Law Practice – Sign in</title>
+<style>
+  :root { --navy:#1f3a5f; --navy-soft:#f1f5fb; --ink:#1d232b; --muted:#6b7380; --line:#c9d1dc; --danger:#b3261e; --bg:#e9edf2; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    font-size:16px; line-height:1.4; display:flex; align-items:center; justify-content:center; min-height:100vh; }
+  .card { width:min(420px, 100% - 24px); background:#fff; border-radius:8px;
+    box-shadow:0 2px 14px rgba(0,0,0,.12); padding:30px 26px; }
+  h1 { margin:0; text-align:center; color:var(--navy); font-size:21px; font-weight:800;
+    letter-spacing:.05em; text-transform:uppercase; }
+  .address { text-align:center; font-size:12px; color:var(--muted); margin:4px 0 0; }
+  .doc-label { text-align:center; font-weight:800; letter-spacing:.4em; font-size:14px;
+    margin:10px 0 0; padding-left:.4em; color:var(--ink); }
+  hr { border:0; border-top:2px solid var(--navy); margin:16px 0 22px; }
+  label { display:block; font-weight:600; font-size:15px; margin-bottom:6px; }
+  input { width:100%; font:inherit; font-size:16px; padding:12px; border:1px solid var(--line);
+    border-radius:6px; outline:none; }
+  input:focus { border-color:var(--navy); box-shadow:0 0 0 3px rgba(31,58,95,.14); }
+  input.invalid { border-color:var(--danger); }
+  button { width:100%; min-height:50px; margin-top:18px; font:inherit; font-weight:600; font-size:16px;
+    border-radius:6px; border:1px solid var(--navy); background:var(--navy); color:#fff; cursor:pointer; }
+  button:disabled { opacity:.6; cursor:wait; }
+  .msg { margin-top:12px; font-size:14px; text-align:center; min-height:1em; color:var(--danger); }
+  .foot { margin-top:18px; text-align:center; font-size:12px; color:var(--muted); }
+</style>
+</head>
+<body>
+<main class="card">
+  <h1>Raj Govin Law Practice</h1>
+  <p class="address">People's Park Centre, #05-48, Singapore 058357</p>
+  <p class="doc-label">DIGITAL RECORDS</p>
+  <hr>
+
+  <form id="f" autocomplete="off">
+    <label for="pw">Password</label>
+    <input type="password" id="pw" autocomplete="current-password" autofocus>
+    <button type="submit" id="go">Sign in</button>
+  </form>
+  <p class="msg" id="msg" role="status"></p>
+  <p class="foot">Office use only.</p>
+</main>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const next = new URLSearchParams(location.search).get('next');
+  // Only ever return to a path on this site, never to an address someone
+  // appended to the link.
+  const safeNext = (next && /^\/[^/\\]/.test(next)) ? next : '/index.html';
+
+  $('f').addEventListener('submit', async e => {
+    e.preventDefault();
+    const pw = $('pw').value;
+    const btn = $('go');
+    btn.disabled = true; btn.textContent = 'Checking…';
+    $('msg').textContent = '';
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Sign in failed.');
+      location.href = safeNext;
+    } catch (err) {
+      $('pw').classList.add('invalid');
+      $('pw').select();
+      $('msg').textContent = err.message;
+      btn.disabled = false; btn.textContent = 'Sign in';
+    }
+  });
+  $('pw').addEventListener('input', () => $('pw').classList.remove('invalid'));
+})();
+</script>
+</body>
+</html>
