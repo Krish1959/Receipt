@@ -38,6 +38,7 @@ if (ACCOUNTS_SHEET_ID) {
 
 const g = require('./lib/google');
 const auth = require('./lib/auth');
+const { sheetDate } = require('./lib/sheetdate');
 const invoiceRoutes = require('./lib/invoice-routes');
 const pettycashRoutes = require('./lib/pettycash-routes');
 
@@ -307,7 +308,9 @@ app.post('/api/records', async (req, res) => {
   const billNo = clean(c.slNo, 40);
   const nett = Math.round((amount - (m.disInc || 0)) * 100) / 100;
   const split = splitAmount(amount, billNo, lawyer, m);
-  const receiptDate = clean(r.date, 30);
+  // The receipt page already sends "02 Nov 2026"; this keeps it that way
+  // whatever reaches the route, and makes all three tabs agree on one format.
+  const receiptDate = sheetDate(clean(r.date, 30));
   const client = clean(r.receivedFrom);
   const matter = clean(r.paymentFor, 500);
   const modeText = mode === 'Others' ? `Others – ${clean(r.modeOther, 100)}` : mode;
