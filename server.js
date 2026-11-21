@@ -3,6 +3,39 @@
 const path = require('path');
 const express = require('express');
 
+/* ===================== ONE SPREADSHEET, THREE TABS =====================
+ *
+ * The practice used to keep two files: "Cash Receipts" (this module) and
+ * "Invoices". They are now a single file named **Accounts**, holding
+ *
+ *     Receipts   money taken at the desk        (this module)
+ *     Invoices   invoice + its receipt          (lib/invoice-routes.js)
+ *     Claims     petty-cash claims              (lib/pettycash-routes.js)
+ *
+ * so a month's work is read, filtered and sent to the accountant in one
+ * place, and Module 2 opens one spreadsheet instead of two.
+ *
+ * ACCOUNTS_SHEET_ID names that file. The three modules were written against
+ * one sheet id each, from the days of separate files, so the id is handed to
+ * each of them here — BEFORE they are required, because each reads its
+ * settings as it loads. One place decides which spreadsheet is in use.
+ *
+ * Nothing breaks if ACCOUNTS_SHEET_ID is absent: each module falls back to
+ * its own older variable and an existing deployment keeps running.
+ * ====================================================================== */
+const ACCOUNTS_SHEET_ID = (process.env.ACCOUNTS_SHEET_ID || '').trim().replace(/^["']|["']$/g, '');
+if (ACCOUNTS_SHEET_ID) {
+  process.env.GOOGLE_SHEET_ID = ACCOUNTS_SHEET_ID;
+  process.env.INVOICES_SHEET_ID = ACCOUNTS_SHEET_ID;
+  process.env.CLAIMS_SHEET_ID = ACCOUNTS_SHEET_ID;
+
+  // "Records" was the old tab name inside the old file. Inside Accounts the
+  // tab is "Receipts". A tab name the office has deliberately set to anything
+  // else is left alone.
+  const tab = (process.env.GOOGLE_SHEET_TAB || '').trim();
+  if (!tab || tab === 'Records') process.env.GOOGLE_SHEET_TAB = 'Receipts';
+}
+
 const g = require('./lib/google');
 const auth = require('./lib/auth');
 const invoiceRoutes = require('./lib/invoice-routes');
@@ -211,13 +244,18 @@ app.get('/healthz', async (_req, res) => {
     const petty = pettycashRoutes.status();
     res.json({
       ok: true, sheets: 'connected', authMode: g.authMode(), serviceAccount,
-      sheetId: SHEET_ID, tab: SHEET_TAB, invoices,
+      sheetId: SHEET_ID, tab: SHEET_TAB,
+      oneFile: ACCOUNTS_SHEET_ID
+        ? `ACCOUNTS_SHEET_ID in use — tabs ${SHEET_TAB} / ${inv.sheetTab} / ${petty.sheetTab}`
+        : 'ACCOUNTS_SHEET_ID is not set — still using the older per-module sheet ids',
+      invoices,
       pettycash: [
         petty.ai ? `AI ready (${petty.model})` : 'NO AI KEY - GEMINI_API_KEY is not set',
         petty.drive ? 'Drive ready' : 'NO DRIVE FOLDER - DRIVE_FOLDER_CLAIMS is not set',
         petty.sheet ? `sheet ready (tab "${petty.sheetTab}")` : 'NO CLAIMS SHEET'
       ].join(' | '),
       env: {
+        ACCOUNTS_SHEET_ID: !!ACCOUNTS_SHEET_ID,
         INVOICES_SHEET_ID: inv.sheetConfigured,
         DRIVE_FOLDER_INVOICES: inv.folderInvoices,
         DRIVE_FOLDER_CASH_RECEIPTS: inv.folderCashReceipts,
