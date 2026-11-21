@@ -6,6 +6,7 @@ const express = require('express');
 const g = require('./lib/google');
 const auth = require('./lib/auth');
 const invoiceRoutes = require('./lib/invoice-routes');
+const pettycashRoutes = require('./lib/pettycash-routes');
 
 const PORT = process.env.PORT || 3000;
 const SHEET_ID = (process.env.GOOGLE_SHEET_ID || '').trim().replace(/^["']|["']$/g, '');
@@ -170,7 +171,8 @@ function sgtNow() {
 
 /* ---------- App ---------- */
 const app = express();
-// Word documents arrive from the Invoice page as base64 in JSON.
+// Word documents arrive from the Invoice page as base64 in JSON, and scanned
+// PDF vouchers arrive the same way from the Petty-cash page.
 app.use(express.json({ limit: '12mb' }));
 
 // Everything below this line needs the office password. /healthz, the login
@@ -179,6 +181,7 @@ auth.mount(app);
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/invoice', invoiceRoutes.router);
+app.use('/api/pettycash', pettycashRoutes.router);
 
 // Link for the "Open Google Sheet" buttons
 app.get('/api/config', (_req, res) => {
@@ -205,14 +208,17 @@ app.get('/healthz', async (_req, res) => {
       try { await invoiceRoutes.ensureHeader(); invoices = 'connected'; }
       catch (e) { invoices = `error: ${e.message}`; }
     }
+    const petty = pettycashRoutes.status();
     res.json({
       ok: true, sheets: 'connected', authMode: g.authMode(), serviceAccount,
       sheetId: SHEET_ID, tab: SHEET_TAB, invoices,
+      pettycash: petty.ai ? `AI ready (${petty.model})` : 'NO AI KEY - GEMINI_API_KEY is not set',
       env: {
         INVOICES_SHEET_ID: inv.sheetConfigured,
         DRIVE_FOLDER_INVOICES: inv.folderInvoices,
         DRIVE_FOLDER_CASH_RECEIPTS: inv.folderCashReceipts,
         INVOICE_TEMPLATE_FILE_ID: inv.templateFile,
+        GEMINI_API_KEY: petty.ai,
         GOOGLE_OAUTH_CLIENT_ID: !!process.env.GOOGLE_OAUTH_CLIENT_ID,
         GOOGLE_OAUTH_CLIENT_SECRET: !!process.env.GOOGLE_OAUTH_CLIENT_SECRET,
         GOOGLE_OAUTH_REFRESH_TOKEN: !!process.env.GOOGLE_OAUTH_REFRESH_TOKEN,
