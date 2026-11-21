@@ -277,7 +277,7 @@
       <button type="button" class="btn" id="make" disabled>Create Claim Form</button>
     </div>
     <p class="msg" id="msg" role="status"></p>
-    <p class="hint" style="text-align:center;margin-top:18px">Petty cash · page build 4 · <span id="buildNote">checking the server…</span></p>
+    <p class="hint" style="text-align:center;margin-top:18px">Petty cash · page build 5 · <span id="buildNote">checking the server…</span></p>
   </section>
 
   <!-- ================= THE FINISHED FORM ================= -->
@@ -686,6 +686,7 @@
   }
 
   let lastFiled = null;      // what the server said about the claim just filed
+  let exitWarned = false;    // a half-finished save is waiting to be acknowledged
 
   async function fileClaim(which) {
     if (saved) return true;
@@ -732,6 +733,8 @@
 
   function resetAll(note) {
     built = null; jobId = null; saved = false; files = []; lines = [];
+    exitWarned = false; lastFiled = null;
+    $('saveExit').textContent = 'Save & Exit';
     $('result').hidden = true;
     $('work').hidden = false;
     $('make').disabled = true; $('make').textContent = 'Create Claim Form';
@@ -757,8 +760,18 @@
       + 'Drop the vouchers for the next claim.';
   });
 
+  // A clean save returns to the main page on its own. One that only half
+  // worked — the sheet row written but Drive skipped, say — stays put: a
+  // warning that vanishes after a second and a half is no warning at all.
   $('saveExit').addEventListener('click', async () => {
+    if (exitWarned) { goHome(); return; }
     if (!(await fileClaim('exit'))) return;
+    if (lastFiled && lastFiled.warning) {
+      exitWarned = true;
+      $('saveExit').textContent = 'Exit anyway';
+      setMsg('msg2', lastFiled.warning + ' Press Exit anyway to leave this page.', 'warn');
+      return;
+    }
     setMsg('msg2', 'Filed. Returning to the main page…', 'ok');
     setTimeout(goHome, 1400);
   });
