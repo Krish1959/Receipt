@@ -212,13 +212,19 @@ app.get('/healthz', async (_req, res) => {
     res.json({
       ok: true, sheets: 'connected', authMode: g.authMode(), serviceAccount,
       sheetId: SHEET_ID, tab: SHEET_TAB, invoices,
-      pettycash: petty.ai ? `AI ready (${petty.model})` : 'NO AI KEY - GEMINI_API_KEY is not set',
+      pettycash: [
+        petty.ai ? `AI ready (${petty.model})` : 'NO AI KEY - GEMINI_API_KEY is not set',
+        petty.drive ? 'Drive ready' : 'NO DRIVE FOLDER - DRIVE_FOLDER_CLAIMS is not set',
+        petty.sheet ? `sheet ready (tab "${petty.sheetTab}")` : 'NO CLAIMS SHEET'
+      ].join(' | '),
       env: {
         INVOICES_SHEET_ID: inv.sheetConfigured,
         DRIVE_FOLDER_INVOICES: inv.folderInvoices,
         DRIVE_FOLDER_CASH_RECEIPTS: inv.folderCashReceipts,
         INVOICE_TEMPLATE_FILE_ID: inv.templateFile,
         GEMINI_API_KEY: petty.ai,
+        DRIVE_FOLDER_CLAIMS: petty.folderClaims,
+        CLAIMS_SHEET: petty.sheetConfigured,
         GOOGLE_OAUTH_CLIENT_ID: !!process.env.GOOGLE_OAUTH_CLIENT_ID,
         GOOGLE_OAUTH_CLIENT_SECRET: !!process.env.GOOGLE_OAUTH_CLIENT_SECRET,
         GOOGLE_OAUTH_REFRESH_TOKEN: !!process.env.GOOGLE_OAUTH_REFRESH_TOKEN,
