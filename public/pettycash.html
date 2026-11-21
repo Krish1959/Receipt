@@ -277,6 +277,7 @@
       <button type="button" class="btn" id="make" disabled>Create Claim Form</button>
     </div>
     <p class="msg" id="msg" role="status"></p>
+    <p class="hint" style="text-align:center;margin-top:18px">Petty cash · page build 4 · <span id="buildNote">checking the server…</span></p>
   </section>
 
   <!-- ================= THE FINISHED FORM ================= -->
@@ -315,11 +316,16 @@
     </div>
 
     <div class="actions no-print">
-      <button type="button" class="btn ghost" id="cancel">Cancel</button>
       <button type="button" class="btn ghost" id="print">Print</button>
-      <button type="button" class="btn" id="download">Download Word</button>
+      <button type="button" class="btn ghost" id="download">Download Word</button>
+    </div>
+    <div class="actions no-print" style="margin-top:10px">
+      <button type="button" class="btn ghost" id="cancel">Cancel</button>
+      <button type="button" class="btn ghost" id="next">Next Claim</button>
+      <button type="button" class="btn" id="saveExit">Save &amp; Exit</button>
     </div>
     <p class="msg no-print" id="msg2" role="status"></p>
+    <p class="hint no-print" id="filedNote" style="text-align:center" hidden></p>
   </section>
 </main>
 
@@ -332,9 +338,14 @@
   const MAX = 5;
 
   let files = [];          // { name, state:'busy'|'ok'|'bad', error }
-  let lines = [];          // { description, amount, gst, confidence }
+  let lines = [];          // { description, amount, gst, confidence, fileId }
   let built = null;        // the server's reply for the finished form
+  let jobId = null;        // this claim on the server: holds the scans and the form
+  let saved = false;       // filed to Drive and the sheet already
   let aiOn = true;
+  let filingOn = true;     // Drive + sheet are configured on the server
+  let working = false;     // a voucher is being read right now
+  const usedNos = new Set();   // claim numbers already filed in this session
 
   /* ---------- small helpers ---------- */
   const isoToday = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
@@ -355,15 +366,40 @@
     const d = new Date();
     return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}/${s}`;
   }
-  document.querySelectorAll('input[name="lawyer"]').forEach(r =>
-    r.addEventListener('change', () => { if (!built && !lines.length) $('claimNo').value = buildClaimNo(); }));
 
-  $('claimNo').value = buildClaimNo();
+  // The number is only good to the minute, so two claims filed back to back
+  // would carry the same one — and land in the same Drive folder. Any number
+  // already used in this session gets a -2, -3 … before the lawyer's letter.
+  function freshClaimNo() {
+    const base = buildClaimNo();
+    if (!usedNos.has(base)) return base;
+    const cut = base.lastIndexOf('/');
+    const stem = cut < 0 ? base : base.slice(0, cut);
+    const suf = cut < 0 ? '' : base.slice(cut);
+    for (let i = 2; i < 100; i++) {
+      const candidate = `${stem}-${i}${suf}`;
+      if (!usedNos.has(candidate)) return candidate;
+    }
+    return base;
+  }
+
+  document.querySelectorAll('input[name="lawyer"]').forEach(r =>
+    r.addEventListener('change', () => { if (!built && !lines.length) $('claimNo').value = freshClaimNo(); }));
+
+  $('claimNo').value = freshClaimNo();
   $('claimDate').value = isoToday();
 
   /* ---------- is the AI key set? ---------- */
   fetch('/api/pettycash/config').then(r => r.json()).then(c => {
     aiOn = !!(c && c.ai);
+    filingOn = !!(c && (c.drive || c.sheet));
+    // Says in one line what the server can actually do, so a half-finished
+    // upload or a missing Render variable shows on the page itself.
+    $('buildNote').textContent = [
+      aiOn ? `AI ${c.model}` : 'no AI key',
+      c && c.drive ? 'Drive on' : 'Drive off',
+      c && c.sheet ? 'sheet on' : 'sheet off'
+    ].join(' · ');
     if (!aiOn) {
       $('aiNote').textContent = 'No AI key is set on the server, so vouchers cannot be read automatically. Add the lines by hand below.';
       $('aiNote').style.color = '#9a6700';
@@ -407,13 +443,28 @@
     const use = pdfs.slice(0, space);
     if (pdfs.length > space) setMsg('msg', `Only the first ${space} were taken — five vouchers is the limit.`, 'warn');
 
-    use.forEach(f => readOne(f));
+    use.forEach(f => files.push({ name: f.name, state: 'busy', error: '', file: f }));
+    renderFiles();
+    pump();
   }
 
-  async function readOne(file) {
-    const entry = { name: file.name, state: 'busy', error: '' };
-    files.push(entry);
-    const idx = files.length - 1;
+  // One voucher at a time, in the order they were dropped. Reading them all
+  // at once would start several claims on the server and put the lines in
+  // whatever order the replies happened to come back.
+  async function pump() {
+    if (working) return;
+    working = true;
+    for (;;) {
+      const entry = files.find(e => e.file && e.state === 'busy');
+      if (!entry) break;
+      await readOne(entry);
+    }
+    working = false;
+  }
+
+  async function readOne(entry) {
+    const file = entry.file;
+    entry.file = null;                       // taken off the queue
     renderFiles();
 
     if (!aiOn) {
@@ -427,18 +478,21 @@
       const base64 = await readBase64(file);
       const res = await fetch('/api/pettycash/extract', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: file.name, base64 })
+        body: JSON.stringify({ jobId, name: file.name, base64 })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || 'That voucher could not be read.');
 
+      jobId = data.jobId || jobId;
+      if (!files.includes(entry)) return;    // removed while it was being read
       entry.state = 'ok';
       lines.push({
         description: data.line.description || '',
         amount: data.line.amount === '' ? '' : fmt(data.line.amount),
         gst: fmt(data.line.gst || 0),
         confidence: data.line.confidence || 'low',
-        source: file.name
+        source: file.name,
+        fileId: data.fileId || null
       });
       renderFiles(); renderLines();
       setMsg('msg', 'Read. Check the line below against the voucher.', 'ok');
@@ -478,7 +532,7 @@
 
   /* ---------- the editable lines ---------- */
   function addLine() {
-    lines.push({ description: '', amount: '', gst: '0.00', confidence: 'high', source: null });
+    lines.push({ description: '', amount: '', gst: '0.00', confidence: 'high', source: null, fileId: null });
     renderLines();
   }
   $('addLine').addEventListener('click', () => {
@@ -545,14 +599,17 @@
       const res = await fetch('/api/pettycash/build', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          claimNo, date, payTo,
+          jobId, claimNo, date, payTo,
+          lawyer: (document.querySelector('input[name="lawyer"]:checked') || {}).value,
           voucherType: (document.querySelector('input[name="vtype"]:checked') || {}).value,
-          lines: lines.map(l => ({ description: l.description, amount: l.amount, gst: l.gst }))
+          lines: lines.map(l => ({ description: l.description, amount: l.amount, gst: l.gst, fileId: l.fileId }))
         })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || 'The claim form could not be made.');
+      jobId = data.jobId || jobId;
       built = data;
+      saved = false;
       showForm(data);
     } catch (err) {
       btn.disabled = false; btn.textContent = 'Create Claim Form';
@@ -589,7 +646,11 @@
 
     $('work').hidden = true;
     $('result').hidden = false;
-    setMsg('msg2', 'Claim form ready. Download the Word file or print it for signature.', 'ok');
+    $('filedNote').hidden = true;
+    setMsg('msg2', filingOn
+      ? 'Claim form ready. Print it for signature, then file it with Next Claim or Save & Exit.'
+      : 'Claim form ready. Filing to Google Drive is not set up on this server — download the Word file to keep it.',
+      filingOn ? 'ok' : 'warn');
     window.scrollTo(0, 0);
   }
 
@@ -614,19 +675,100 @@
 
   $('print').addEventListener('click', () => window.print());
 
-  $('cancel').addEventListener('click', () => {
-    if (!confirm('Discard this claim form and start again?')) return;
-    built = null; files = []; lines = [];
+  /* ---------- filing to Drive and the sheet ---------- */
+  // Both "Next Claim" and "Save & Exit" file the claim first. The server
+  // refuses to file the same claim twice, so pressing one after the other
+  // is harmless.
+  function busy(on, label) {
+    ['next', 'saveExit', 'cancel', 'download', 'print'].forEach(id => { $(id).disabled = on; });
+    if (label) $(label === 'exit' ? 'saveExit' : 'next').textContent = on
+      ? 'Filing…' : (label === 'exit' ? 'Save & Exit' : 'Next Claim');
+  }
+
+  let lastFiled = null;      // what the server said about the claim just filed
+
+  async function fileClaim(which) {
+    if (saved) return true;
+    if (!jobId || !built) { setMsg('msg2', 'Make the claim form first.', 'error'); return false; }
+
+    busy(true, which);
+    setMsg('msg2', 'Filing to Google Drive…', '');
+    try {
+      const res = await fetch('/api/pettycash/save', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'The claim could not be filed.');
+
+      saved = !data.dryRun;
+      busy(false, which);
+
+      if (data.dryRun) {
+        setMsg('msg2', data.warning, 'warn');
+        return false;                       // nothing was filed — do not move on
+      }
+
+      lastFiled = data;
+      if (built && built.claimNo) usedNos.add(built.claimNo);
+      const note = $('filedNote');
+      note.hidden = false;
+      note.innerHTML = filedHtml(data);
+      setMsg('msg2', data.warning || 'Filed.', data.warning ? 'warn' : 'ok');
+      return true;
+    } catch (err) {
+      busy(false, which);
+      setMsg('msg2', err.message, 'error');
+      return false;
+    }
+  }
+
+  function filedHtml(d) {
+    return d.folderUrl
+      ? `Filed in Drive folder <a href="${d.folderUrl}" target="_blank" rel="noopener">${esc(d.folderName)}</a>`
+        + ` — the form and ${d.vouchers} voucher${d.vouchers === 1 ? '' : 's'}.`
+      : 'Recorded in the Claims sheet.';
+  }
+
+  function resetAll(note) {
+    built = null; jobId = null; saved = false; files = []; lines = [];
     $('result').hidden = true;
     $('work').hidden = false;
     $('make').disabled = true; $('make').textContent = 'Create Claim Form';
-    $('claimNo').value = buildClaimNo();
+    $('claimNo').value = freshClaimNo();
     $('claimDate').value = isoToday();
     $('payTo').value = '';
+    $('filedNote').hidden = true;
     renderFiles(); renderLines();
-    setMsg('msg', 'Cleared. Drop the vouchers for the next claim.', '');
+    setMsg('msg', note || '', '');
     setMsg('msg2', '');
     window.scrollTo(0, 0);
+  }
+
+  $('next').addEventListener('click', async () => {
+    if (!(await fileClaim('next'))) return;
+    const done = lastFiled;
+    resetAll('');
+    const m = $('msg');
+    const warn = done && done.warning;
+    m.className = 'msg ' + (warn ? 'warn' : 'ok');
+    m.innerHTML = (done ? filedHtml(done) + ' ' : '')
+      + (warn ? esc(done.warning) + ' ' : '')
+      + 'Drop the vouchers for the next claim.';
+  });
+
+  $('saveExit').addEventListener('click', async () => {
+    if (!(await fileClaim('exit'))) return;
+    setMsg('msg2', 'Filed. Returning to the main page…', 'ok');
+    setTimeout(goHome, 1400);
+  });
+
+  $('cancel').addEventListener('click', () => {
+    const warn = saved
+      ? 'This claim is already filed. Clear the screen and start a new one?'
+      : 'Discard this claim form without filing it? The vouchers will have to be dropped again.';
+    if (!confirm(warn)) return;
+    resetAll('Cleared. Drop the vouchers for the next claim.');
   });
 
   $('home').addEventListener('click', () => {
