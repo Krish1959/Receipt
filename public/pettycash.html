@@ -4,57 +4,638 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#1f3a5f">
-<title>Raj Govin Law Practice – PETTY CASH</title>
+<title>Raj Govin Law Practice – Petty Cash</title>
 <style>
-  :root { --navy:#1f3a5f; --navy-soft:#f1f5fb; --ink:#1d232b; --muted:#6b7380; --bg:#e9edf2; --radius:8px; }
+  :root {
+    --navy: #1f3a5f;
+    --navy-soft: #f1f5fb;
+    --ink: #1d232b;
+    --muted: #6b7380;
+    --line: #c9d1dc;
+    --danger: #b3261e;
+    --warn: #9a6700;
+    --ok: #1e7a3c;
+    --bg: #e9edf2;
+    --radius: 8px;
+  }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
   body {
-    margin:0; background:var(--bg); color:var(--ink);
-    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-    font-size:16px; line-height:1.4;
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 16px; line-height: 1.4;
   }
   .sheet {
-    width:min(210mm, 100% - 24px); margin:16px auto; background:#fff;
-    border-radius:var(--radius); box-shadow:0 2px 14px rgba(0,0,0,.12);
-    padding:clamp(18px,5vw,18mm) clamp(16px,5vw,20mm);
+    width: min(210mm, 100% - 24px); margin: 16px auto; background: #fff;
+    border-radius: var(--radius); box-shadow: 0 2px 14px rgba(0,0,0,.12);
+    padding: clamp(18px, 5vw, 18mm) clamp(16px, 5vw, 20mm);
   }
-  h1.title { margin:0; text-align:center; color:var(--navy); font-size:clamp(20px,5.6vw,28px);
-    font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
-  .address { text-align:center; font-size:clamp(11px,3.1vw,13px); color:var(--muted); margin:4px 0 0; }
-  .doc-label { text-align:center; font-weight:800; letter-spacing:.4em; font-size:clamp(14px,4vw,16px);
-    margin:10px 0 0; padding-left:.4em; }
-  hr.rule { border:0; border-top:2px solid var(--navy); margin:16px 0 18px; }
-  .placeholder {
-    background:var(--navy-soft); border-radius:6px; padding:28px 18px;
-    text-align:center; font-size:17px; color:var(--navy); font-weight:600;
+  h1.title {
+    margin: 0; text-align: center; color: var(--navy);
+    font-size: clamp(20px, 5.6vw, 28px); font-weight: 800;
+    letter-spacing: .06em; text-transform: uppercase;
   }
-  .placeholder .sub { display:block; font-weight:400; font-size:13.5px; color:var(--muted); margin-top:8px; }
-  .actions { display:flex; gap:10px; margin-top:24px; }
-  .btn { flex:1; min-height:50px; font:inherit; font-weight:600; font-size:16px; border-radius:6px;
-    border:1px solid var(--navy); cursor:pointer; background:#fff; color:var(--navy); padding:0 8px; }
-  @media (max-width:560px) {
-    .sheet { width:100%; margin:0; border-radius:0; box-shadow:none; min-height:100vh; }
-    .actions { padding-bottom:env(safe-area-inset-bottom); }
+  .address { text-align: center; font-size: clamp(11px, 3.1vw, 13px); color: var(--muted); margin: 4px 0 0; }
+  .doc-label {
+    text-align: center; font-weight: 800; letter-spacing: .4em;
+    font-size: clamp(14px, 4vw, 16px); margin: 10px 0 0; padding-left: .4em;
+  }
+  hr.rule { border: 0; border-top: 2px solid var(--navy); margin: 16px 0 18px; }
+
+  .step-label {
+    font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); margin: 22px 0 10px;
+  }
+  .step-label:first-of-type { margin-top: 0; }
+
+  /* ---------- Fields ---------- */
+  .field { margin-bottom: 14px; }
+  .field > label, .field > .label { display: block; font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+  .field input[type="text"], .field input[type="date"] {
+    width: 100%; font: inherit; font-size: 16px; color: var(--ink);
+    padding: 11px 12px; border: 1px solid var(--line); border-radius: 6px;
+    background: #fff; outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  .field input:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(31,58,95,.14); }
+  .field.invalid input { border-color: var(--danger); }
+  .hint { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+
+  .choices { display: flex; flex-wrap: wrap; gap: 10px; }
+  .choice {
+    display: flex; align-items: center; gap: 8px; padding: 10px 14px; min-height: 44px;
+    border: 1px solid var(--line); border-radius: 6px; cursor: pointer;
+    font-weight: 500; user-select: none; flex: 1 1 auto;
+  }
+  .choice input { accent-color: var(--navy); width: 18px; height: 18px; margin: 0; }
+  .choice:has(input:checked) { border-color: var(--navy); background: var(--navy-soft); }
+
+  /* ---------- Drop box ---------- */
+  .box {
+    border: 2px dashed var(--line); border-radius: var(--radius);
+    min-height: 150px; padding: 20px 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; gap: 8px; background: #fdfefe; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .box:hover { border-color: var(--navy); background: var(--navy-soft); }
+  .box.dragover { border-color: var(--navy); background: var(--navy-soft); border-style: solid; }
+  .box.full { border-style: solid; border-color: var(--ok); background: #f3faf5; cursor: not-allowed; }
+  .box-title { font-weight: 700; font-size: 16px; color: var(--navy); }
+  .box-note { font-size: 13px; color: var(--muted); }
+  .box .icon { font-size: 30px; line-height: 1; }
+
+  .files { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .files li {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+    border: 1px solid var(--line); border-radius: 6px; font-size: 14px; background: #fff;
+  }
+  .files .fname { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .files .state { font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+  .files .state.busy { color: var(--muted); }
+  .files .state.ok { color: var(--ok); }
+  .files .state.bad { color: var(--danger); }
+  .files .drop-x {
+    background: none; border: 0; color: var(--muted); font-size: 19px; line-height: 1;
+    cursor: pointer; padding: 0 2px;
+  }
+
+  /* ---------- Lines table ---------- */
+  .lines { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .lines th {
+    text-align: left; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--muted); font-weight: 700; padding: 0 6px 6px; border-bottom: 1px solid var(--line);
+  }
+  .lines td { padding: 6px 6px; vertical-align: middle; border-bottom: 1px solid #eef1f5; }
+  .lines input {
+    width: 100%; font: inherit; font-size: 14.5px; padding: 8px 9px;
+    border: 1px solid var(--line); border-radius: 5px; outline: none; background: #fff;
+  }
+  .lines input:focus { border-color: var(--navy); box-shadow: 0 0 0 2px rgba(31,58,95,.12); }
+  .lines input.num { text-align: right; }
+  .lines tr.low input.desc, .lines tr.low input.num { background: #fffaf0; }
+  .lines .sl { width: 34px; color: var(--muted); text-align: center; font-weight: 600; }
+  .lines .x {
+    background: none; border: 0; color: var(--muted); font-size: 18px; cursor: pointer; padding: 0 4px;
+  }
+  col.c-sl { width: 34px; } col.c-amt { width: 104px; } col.c-gst { width: 94px; } col.c-x { width: 28px; }
+  .flagnote { font-size: 12.5px; color: var(--warn); margin-top: 8px; }
+  .totalbar {
+    display: flex; justify-content: space-between; gap: 12px;
+    background: var(--navy-soft); border-radius: 6px; padding: 11px 13px;
+    font-size: 15px; margin-top: 12px; font-weight: 600;
+  }
+  .totalbar .gst { color: var(--muted); font-weight: 500; }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    min-height: 48px; font: inherit; font-weight: 600; font-size: 16px;
+    border-radius: 6px; border: 1px solid var(--navy); cursor: pointer;
+    background: var(--navy); color: #fff; padding: 0 16px;
+  }
+  .btn.ghost { background: #fff; color: var(--navy); }
+  .btn.wide { width: 100%; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn.ghost:disabled { background: #f6f7f9; }
+  .linkish {
+    background: none; border: 0; color: var(--navy); font: inherit; font-size: 13.5px;
+    text-decoration: underline; cursor: pointer; padding: 6px 2px;
+  }
+  .actions { display: flex; gap: 10px; margin-top: 24px; }
+  .msg { margin-top: 12px; font-size: 14px; text-align: center; min-height: 1em; }
+  .msg.error { color: var(--danger); }
+  .msg.ok { color: var(--ok); }
+  .msg.warn { color: var(--warn); }
+
+  /* ---------- The finished claim form on screen ---------- */
+  .form-paper {
+    border: 1px solid var(--line); border-radius: 6px; padding: 20px 18px; background: #fff;
+  }
+  .form-paper .fp-head { text-align: center; }
+  .fp-practice { font-weight: 800; color: var(--navy); letter-spacing: .04em; font-size: 15px; }
+  .fp-addr { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .fp-title { font-weight: 800; font-size: 19px; margin: 12px 0 14px; }
+  .fp-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; font-size: 14px; margin-bottom: 10px; }
+  .fp-meta b { font-weight: 700; }
+  .fp-ticks { text-align: center; font-size: 14px; margin: 10px 0 14px; }
+  .fp-ticks span { margin: 0 10px; white-space: nowrap; }
+  table.fp { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.fp th, table.fp td { border: 1px solid #333; padding: 7px 8px; vertical-align: top; }
+  table.fp th { background: #edf2fa; font-weight: 700; text-align: left; }
+  table.fp td.n, table.fp th.n { text-align: right; white-space: nowrap; }
+  table.fp td.c, table.fp th.c { text-align: center; width: 52px; white-space: nowrap; }
+  table.fp tr.total td { background: #f5f7fa; font-weight: 700; }
+  table.fp tr.total td.lbl { text-align: right; }
+  table.sign { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 18px; }
+  table.sign th, table.sign td { border: 1px solid #333; padding: 7px 8px; }
+  table.sign th { background: #f5f7fa; font-weight: 700; }
+  table.sign td.rowlbl { font-weight: 700; width: 92px; }
+  table.sign tr.sig td { height: 54px; }
+  .fp-note { font-size: 11.5px; color: var(--muted); font-style: italic; margin-top: 12px; }
+
+  @media (max-width: 620px) {
+    .sheet { width: 100%; margin: 0; border-radius: 0; box-shadow: none; min-height: 100vh; }
+    .row2 { grid-template-columns: 1fr; }
+    .actions { flex-direction: column; padding-bottom: env(safe-area-inset-bottom); }
+    .lines { font-size: 13px; }
+    col.c-amt { width: 86px; } col.c-gst { width: 78px; }
+  }
+
+  /* ---------- Printing: the claim form only ---------- */
+  @media print {
+    body { background: #fff; }
+    .sheet { width: auto; margin: 0; box-shadow: none; border-radius: 0; padding: 0; }
+    .no-print { display: none !important; }
+    .form-paper { border: 0; padding: 0; }
+    table.fp th { background: #edf2fa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    table.fp tr.total td, table.sign th { background: #f5f7fa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
 </head>
 <body>
 
 <main class="sheet">
-  <h1 class="title">Raj Govin Law Practice</h1>
-  <p class="address">People's Park Centre, #05-48, Singapore 058357</p>
-  <p class="doc-label">PETTY CASH</p>
-  <hr class="rule">
-
-  <div class="placeholder">
-    This page is to submit petty cash claims.
-    <span class="sub">Under development – Module 1.</span>
+  <div class="no-print">
+    <h1 class="title">Raj Govin Law Practice</h1>
+    <p class="address">People's Park Centre, #05-48, Singapore 058357</p>
+    <p class="doc-label">PETTY CASH</p>
+    <hr class="rule">
   </div>
 
-  <div class="actions">
-    <button type="button" class="btn" onclick="window.location.href='index.html'">Return</button>
-  </div>
+  <!-- ================= THE WORKING PAGE ================= -->
+  <section id="work" class="no-print">
+
+    <!-- 1. Who and when -->
+    <p class="step-label">1 · Claim details</p>
+
+    <div class="field">
+      <span class="label">Lawyer:</span>
+      <div class="choices" role="radiogroup">
+        <label class="choice"><input type="radio" name="lawyer" value="Dora Raj" data-s="D" checked>Dora Raj</label>
+        <label class="choice"><input type="radio" name="lawyer" value="Govinda Raju" data-s="G">Govinda Raju</label>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="field" id="f-claim">
+        <label for="claimNo">Claim Form No:</label>
+        <input type="text" id="claimNo" maxlength="40">
+      </div>
+      <div class="field" id="f-date">
+        <label for="claimDate">Date:</label>
+        <input type="date" id="claimDate">
+      </div>
+    </div>
+    <div class="hint">Format YYYYMMDD-HHMM/D for Dora Raj, /G for Govinda Raju. Refreshes when the lawyer changes. Editable.</div>
+
+    <div class="field" id="f-payto" style="margin-top:14px">
+      <label for="payTo">Pay To:</label>
+      <input type="text" id="payTo" maxlength="120" placeholder="Who is being reimbursed">
+    </div>
+
+    <div class="field">
+      <span class="label">Voucher type:</span>
+      <div class="choices" role="radiogroup">
+        <label class="choice"><input type="radio" name="vtype" value="Petty Cash Voucher" checked>Petty Cash Voucher</label>
+        <label class="choice"><input type="radio" name="vtype" value="Payment Voucher">Payment Voucher</label>
+        <label class="choice"><input type="radio" name="vtype" value="Cash Voucher">Cash Voucher</label>
+      </div>
+    </div>
+
+    <!-- 2. The vouchers -->
+    <p class="step-label">2 · Drop the vouchers <span id="count" style="text-transform:none;letter-spacing:0">(0 of 5)</span></p>
+
+    <div class="box" id="drop" tabindex="0" role="button" aria-label="Drag and drop up to five PDF vouchers">
+      <span class="icon" aria-hidden="true">⬇</span>
+      <span class="box-title">Drag &amp; Drop up to 5 Claim Forms</span>
+      <span class="box-note" id="dropNote">PDF only — printed or handwritten. Or tap to choose the files.</span>
+    </div>
+    <ul class="files" id="fileList"></ul>
+    <p class="hint" id="aiNote">Each voucher is read by AI as it arrives: one line, the amount and the GST printed on it.</p>
+
+    <!-- 3. The lines -->
+    <section id="linesWrap" hidden>
+      <p class="step-label">3 · Check each line before the form is made</p>
+      <table class="lines">
+        <colgroup><col class="c-sl"><col><col class="c-amt"><col class="c-gst"><col class="c-x"></colgroup>
+        <thead>
+          <tr><th></th><th>Description</th><th style="text-align:right">Amount S$</th><th style="text-align:right">GST S$</th><th></th></tr>
+        </thead>
+        <tbody id="lineBody"></tbody>
+      </table>
+      <p class="flagnote" id="flagNote" hidden>Lines shaded amber were hard to read — check the amount against the voucher.</p>
+      <button type="button" class="linkish" id="addLine">+ Add a line by hand</button>
+      <div class="totalbar">
+        <span>Total</span>
+        <span>S$ <span id="tTotal">0.00</span> <span class="gst">· GST $<span id="tGst">0.00</span></span></span>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button type="button" class="btn ghost" id="home">Main Page</button>
+      <button type="button" class="btn" id="make" disabled>Create Claim Form</button>
+    </div>
+    <p class="msg" id="msg" role="status"></p>
+  </section>
+
+  <!-- ================= THE FINISHED FORM ================= -->
+  <section id="result" hidden>
+    <p class="step-label no-print">4 · The claim form</p>
+
+    <div class="form-paper" id="paper">
+      <div class="fp-head">
+        <div class="fp-practice">RAJ GOVIN LAW PRACTICE</div>
+        <div class="fp-addr">People's Park Centre, #05-48, Singapore 058357</div>
+        <div class="fp-title">Cash Purchase Claim</div>
+      </div>
+      <div class="fp-meta">
+        <div><b>Ref No:</b> <span id="rClaim"></span></div>
+        <div><b>Pay To:</b> <span id="rPayTo"></span></div>
+        <div><b>Date:</b> <span id="rDate"></span></div>
+        <div></div>
+      </div>
+      <div class="fp-ticks" id="rTicks"></div>
+
+      <table class="fp">
+        <thead>
+          <tr><th class="c">Sl No</th><th>Description</th><th class="n">Amount (S$)</th><th>Remark</th></tr>
+        </thead>
+        <tbody id="rBody"></tbody>
+      </table>
+
+      <table class="sign">
+        <tr><th></th><th>Submitted by</th><th>Checked by</th><th>Approved</th></tr>
+        <tr><td class="rowlbl">Name</td><td id="rName"></td><td></td><td></td></tr>
+        <tr><td class="rowlbl">Date</td><td id="rSignDate"></td><td></td><td></td></tr>
+        <tr class="sig"><td class="rowlbl">Signature</td><td></td><td></td><td></td></tr>
+      </table>
+
+      <p class="fp-note">The practice is not GST registered. GST shown above is the amount printed on each voucher and is claimed as part of the cost.</p>
+    </div>
+
+    <div class="actions no-print">
+      <button type="button" class="btn ghost" id="cancel">Cancel</button>
+      <button type="button" class="btn ghost" id="print">Print</button>
+      <button type="button" class="btn" id="download">Download Word</button>
+    </div>
+    <p class="msg no-print" id="msg2" role="status"></p>
+  </section>
 </main>
 
+<input type="file" id="picker" accept="application/pdf,.pdf" multiple hidden>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const pad = n => String(n).padStart(2, '0');
+  const MAX = 5;
+
+  let files = [];          // { name, state:'busy'|'ok'|'bad', error }
+  let lines = [];          // { description, amount, gst, confidence }
+  let built = null;        // the server's reply for the finished form
+  let aiOn = true;
+
+  /* ---------- small helpers ---------- */
+  const isoToday = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+  const isoToDmy = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? `${m[3]}-${m[2]}-${m[1]}` : ''; };
+  const money = v => {
+    const n = Number(String(v ?? '').replace(/[,\s$]/g, ''));
+    return Number.isFinite(n) ? n : 0;
+  };
+  const fmt = n => (Math.round(n * 100) / 100).toFixed(2);
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function setMsg(el, t, cls) { const m = $(el); m.className = 'msg' + (cls ? ' ' + cls : '') + (el === 'msg2' ? ' no-print' : ''); m.textContent = t || ''; }
+  const goHome = () => { window.location.href = 'index.html'; };
+
+  /* ---------- claim number ---------- */
+  function buildClaimNo() {
+    const sel = document.querySelector('input[name="lawyer"]:checked');
+    const s = sel ? sel.dataset.s : 'D';
+    const d = new Date();
+    return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}/${s}`;
+  }
+  document.querySelectorAll('input[name="lawyer"]').forEach(r =>
+    r.addEventListener('change', () => { if (!built && !lines.length) $('claimNo').value = buildClaimNo(); }));
+
+  $('claimNo').value = buildClaimNo();
+  $('claimDate').value = isoToday();
+
+  /* ---------- is the AI key set? ---------- */
+  fetch('/api/pettycash/config').then(r => r.json()).then(c => {
+    aiOn = !!(c && c.ai);
+    if (!aiOn) {
+      $('aiNote').textContent = 'No AI key is set on the server, so vouchers cannot be read automatically. Add the lines by hand below.';
+      $('aiNote').style.color = '#9a6700';
+      $('linesWrap').hidden = false;
+      if (!lines.length) addLine();
+    }
+  }).catch(() => {});
+
+  /* ---------- the drop box ---------- */
+  function wireDrop(box) {
+    const stop = e => { e.preventDefault(); e.stopPropagation(); };
+    ['dragenter', 'dragover'].forEach(ev => box.addEventListener(ev, e => { stop(e); if (files.length < MAX) box.classList.add('dragover'); }));
+    ['dragleave', 'dragend'].forEach(ev => box.addEventListener(ev, e => { stop(e); box.classList.remove('dragover'); }));
+    box.addEventListener('drop', e => {
+      stop(e); box.classList.remove('dragover');
+      take(Array.from((e.dataTransfer && e.dataTransfer.files) || []));
+    });
+    const open = () => { if (files.length < MAX) { $('picker').value = ''; $('picker').click(); } };
+    box.addEventListener('click', open);
+    box.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+  }
+  wireDrop($('drop'));
+  $('picker').addEventListener('change', e => take(Array.from(e.target.files || [])));
+
+  function readBase64(file) {
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(String(fr.result).split(',')[1] || '');
+      fr.onerror = () => reject(new Error('That file could not be read.'));
+      fr.readAsDataURL(file);
+    });
+  }
+
+  function take(dropped) {
+    const pdfs = dropped.filter(f => /\.pdf$/i.test(f.name) || f.type === 'application/pdf');
+    if (!pdfs.length) { setMsg('msg', 'Please drop PDF files only.', 'error'); return; }
+    if (dropped.length !== pdfs.length) setMsg('msg', 'Only the PDF files were taken.', 'warn');
+
+    const space = MAX - files.length;
+    if (space <= 0) { setMsg('msg', `Five vouchers is the limit for one claim form.`, 'error'); return; }
+    const use = pdfs.slice(0, space);
+    if (pdfs.length > space) setMsg('msg', `Only the first ${space} were taken — five vouchers is the limit.`, 'warn');
+
+    use.forEach(f => readOne(f));
+  }
+
+  async function readOne(file) {
+    const entry = { name: file.name, state: 'busy', error: '' };
+    files.push(entry);
+    const idx = files.length - 1;
+    renderFiles();
+
+    if (!aiOn) {
+      entry.state = 'bad';
+      entry.error = 'no AI key — add the line by hand';
+      renderFiles();
+      return;
+    }
+
+    try {
+      const base64 = await readBase64(file);
+      const res = await fetch('/api/pettycash/extract', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: file.name, base64 })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'That voucher could not be read.');
+
+      entry.state = 'ok';
+      lines.push({
+        description: data.line.description || '',
+        amount: data.line.amount === '' ? '' : fmt(data.line.amount),
+        gst: fmt(data.line.gst || 0),
+        confidence: data.line.confidence || 'low',
+        source: file.name
+      });
+      renderFiles(); renderLines();
+      setMsg('msg', 'Read. Check the line below against the voucher.', 'ok');
+    } catch (err) {
+      entry.state = 'bad';
+      entry.error = err.message;
+      renderFiles();
+      setMsg('msg', `${file.name}: ${err.message}`, 'error');
+    }
+  }
+
+  function renderFiles() {
+    $('count').textContent = `(${files.length} of ${MAX})`;
+    $('drop').classList.toggle('full', files.length >= MAX);
+    $('dropNote').textContent = files.length >= MAX
+      ? 'Five vouchers taken — that is the limit for one claim form.'
+      : 'PDF only — printed or handwritten. Or tap to choose the files.';
+
+    $('fileList').innerHTML = files.map((f, i) => {
+      const label = f.state === 'busy' ? 'Reading…' : f.state === 'ok' ? 'Read' : 'Could not read';
+      return `<li>
+        <span class="fname">${esc(f.name)}</span>
+        <span class="state ${f.state}">${label}</span>
+        <button type="button" class="drop-x" data-i="${i}" title="Remove" aria-label="Remove ${esc(f.name)}">&times;</button>
+      </li>`;
+    }).join('');
+
+    $('fileList').querySelectorAll('.drop-x').forEach(b => b.addEventListener('click', () => {
+      const i = Number(b.dataset.i);
+      const name = files[i] && files[i].name;
+      files.splice(i, 1);
+      const li = lines.findIndex(l => l.source === name);
+      if (li >= 0) lines.splice(li, 1);
+      renderFiles(); renderLines();
+    }));
+  }
+
+  /* ---------- the editable lines ---------- */
+  function addLine() {
+    lines.push({ description: '', amount: '', gst: '0.00', confidence: 'high', source: null });
+    renderLines();
+  }
+  $('addLine').addEventListener('click', () => {
+    if (lines.length >= MAX) { setMsg('msg', 'Five lines is the limit for one claim form.', 'error'); return; }
+    addLine();
+    const last = $('lineBody').querySelector('tr:last-child input.desc');
+    if (last) last.focus();
+  });
+
+  function renderLines() {
+    $('linesWrap').hidden = lines.length === 0 && aiOn;
+    $('lineBody').innerHTML = lines.map((l, i) => `
+      <tr class="${l.confidence === 'low' ? 'low' : ''}">
+        <td class="sl">${i + 1}</td>
+        <td><input class="desc" type="text" maxlength="120" data-i="${i}" data-k="description"
+             value="${esc(l.description)}" placeholder="What the money was spent on"></td>
+        <td><input class="num amt" type="text" inputmode="decimal" maxlength="12" data-i="${i}" data-k="amount"
+             value="${esc(l.amount)}" placeholder="0.00"></td>
+        <td><input class="num gst" type="text" inputmode="decimal" maxlength="12" data-i="${i}" data-k="gst"
+             value="${esc(l.gst)}" placeholder="0.00"></td>
+        <td><button type="button" class="x" data-del="${i}" title="Remove this line" aria-label="Remove line ${i + 1}">&times;</button></td>
+      </tr>`).join('');
+
+    $('lineBody').querySelectorAll('input').forEach(inp => {
+      inp.addEventListener('input', () => {
+        lines[Number(inp.dataset.i)][inp.dataset.k] = inp.value;
+        if (inp.dataset.k !== 'description') totals();
+      });
+    });
+    $('lineBody').querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => {
+      const i = Number(b.dataset.del);
+      const src = lines[i] && lines[i].source;
+      lines.splice(i, 1);
+      if (src) { const fi = files.findIndex(f => f.name === src); if (fi >= 0) files.splice(fi, 1); }
+      renderFiles(); renderLines();
+    }));
+
+    $('flagNote').hidden = !lines.some(l => l.confidence === 'low');
+    totals();
+  }
+
+  function totals() {
+    const t = lines.reduce((a, l) => a + money(l.amount), 0);
+    const g = lines.reduce((a, l) => a + money(l.gst), 0);
+    $('tTotal').textContent = fmt(t);
+    $('tGst').textContent = fmt(g);
+    const usable = lines.length > 0 && lines.every(l => String(l.description).trim() && money(l.amount) > 0);
+    $('make').disabled = !usable;
+  }
+
+  /* ---------- 4. make the claim form ---------- */
+  $('make').addEventListener('click', async () => {
+    const claimNo = $('claimNo').value.trim();
+    const date = isoToDmy($('claimDate').value);
+    const payTo = $('payTo').value.trim();
+    $('f-claim').classList.toggle('invalid', !claimNo);
+    $('f-date').classList.toggle('invalid', !date);
+    $('f-payto').classList.toggle('invalid', !payTo);
+    if (!claimNo || !date || !payTo) { setMsg('msg', 'Please fill in the Claim Form No, the date and Pay To.', 'error'); return; }
+
+    const btn = $('make');
+    btn.disabled = true; btn.textContent = 'Making…';
+    try {
+      const res = await fetch('/api/pettycash/build', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          claimNo, date, payTo,
+          voucherType: (document.querySelector('input[name="vtype"]:checked') || {}).value,
+          lines: lines.map(l => ({ description: l.description, amount: l.amount, gst: l.gst }))
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'The claim form could not be made.');
+      built = data;
+      showForm(data);
+    } catch (err) {
+      btn.disabled = false; btn.textContent = 'Create Claim Form';
+      setMsg('msg', err.message, 'error');
+    }
+  });
+
+  function showForm(d) {
+    $('rClaim').textContent = d.claimNo;
+    $('rPayTo').textContent = d.payTo;
+    $('rDate').textContent = d.date;
+    $('rName').textContent = d.payTo;
+    $('rSignDate').textContent = d.date;
+
+    $('rTicks').innerHTML = ['Petty Cash Voucher', 'Payment Voucher', 'Cash Voucher']
+      .map(t => `<span>${t === d.voucherType ? '&#9746;' : '&#9744;'} ${t}</span>`).join('');
+
+    const rows = [];
+    for (let i = 0; i < Math.max(5, d.lines.length); i++) {
+      const l = d.lines[i];
+      rows.push(`<tr>
+        <td class="c">${i + 1}</td>
+        <td>${l ? esc(l.description) : '&nbsp;'}</td>
+        <td class="n">${l ? fmt(l.amount) : ''}</td>
+        <td>${l ? esc(l.remark) : ''}</td>
+      </tr>`);
+    }
+    rows.push(`<tr class="total">
+      <td class="lbl" colspan="2">TOTAL</td>
+      <td class="n">${fmt(d.total)}</td>
+      <td>GST $${fmt(d.totalGst)}</td>
+    </tr>`);
+    $('rBody').innerHTML = rows.join('');
+
+    $('work').hidden = true;
+    $('result').hidden = false;
+    setMsg('msg2', 'Claim form ready. Download the Word file or print it for signature.', 'ok');
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------- download / print / cancel ---------- */
+  $('download').addEventListener('click', () => {
+    if (!built) return;
+    try {
+      const bin = atob(built.docx);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = built.fileName;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      setMsg('msg2', `Downloaded ${built.fileName}.`, 'ok');
+    } catch (_) {
+      setMsg('msg2', 'The download could not be started. Use Print instead.', 'error');
+    }
+  });
+
+  $('print').addEventListener('click', () => window.print());
+
+  $('cancel').addEventListener('click', () => {
+    if (!confirm('Discard this claim form and start again?')) return;
+    built = null; files = []; lines = [];
+    $('result').hidden = true;
+    $('work').hidden = false;
+    $('make').disabled = true; $('make').textContent = 'Create Claim Form';
+    $('claimNo').value = buildClaimNo();
+    $('claimDate').value = isoToday();
+    $('payTo').value = '';
+    renderFiles(); renderLines();
+    setMsg('msg', 'Cleared. Drop the vouchers for the next claim.', '');
+    setMsg('msg2', '');
+    window.scrollTo(0, 0);
+  });
+
+  $('home').addEventListener('click', () => {
+    if (lines.length && !confirm('This claim form has not been made yet. Leave anyway?')) return;
+    goHome();
+  });
+
+  renderFiles();
+})();
+</script>
 </body>
 </html>
