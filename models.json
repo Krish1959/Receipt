@@ -1,0 +1,10 @@
+{
+  "note": "AI models used to read scanned petty-cash vouchers. The app tries them from the top down and uses the first one that answers. When Google releases a newer model, add its name as a new first line. When one retires, delete its line. Keep the commas and quotes exactly as shown, and keep at least one name in the list.",
+  "models": [
+    "gemini-3.8-flash",
+    "gemini-3.7-flash",
+    "gemini-3.6-flash"
+  ],
+  "checked": "21-11-2026",
+  "where-to-find-model-names": "https://ai.google.dev/gemini-api/docs/models"
+}
